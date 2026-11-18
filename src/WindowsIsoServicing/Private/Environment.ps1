@@ -489,3 +489,77 @@ function Test-MicrosoftSignature {
     $signature = Get-AuthenticodeSignature -LiteralPath $Path
     $signature.Status -eq [System.Management.Automation.SignatureStatus]::Valid -and $null -ne $signature.SignerCertificate -and $signature.SignerCertificate.Subject -match '(^|,\s*)O=Microsoft Corporation(,|$)'
 }
+
+function Protect-ServicingDirectory {
+    <#
+    .SYNOPSIS
+        Restricts a workspace or cache folder to SYSTEM and Administrators, after checking that no other user controls it.
+
+    .DESCRIPTION
+        The workspace holds the media tree and the packages that end up in the serviced ISO, and the cache holds verified packages that later runs reuse. By default both are under %ProgramData%, where every user can create folders and files, and the creator owns what they create. A non-administrator who created one of these folders first, or a file or link inside it, could replace a package after its signature was checked, or change the media before OSCDIMG builds the ISO, and the run would publish that ISO as validated. So the folder and each parent folder must be owned by SYSTEM, Administrators, TrustedInstaller or the current user and must not be a link; the same holds for the folder's direct children, or for everything under it with Check All, which the cache uses because cached files are reused. Anything else stops the run and is listed, because taking ownership would keep a handle an attacker already holds open. Then the folder gets Administrators as owner and an access list that grants only SYSTEM and Administrators full control, inherited by everything below; it is written only when the protection, the owner or the rules differ (the stored form carries an auto-inherited flag, so the descriptor text cannot be compared), so large workspaces are not rewritten on every run (subject to -WhatIf and -Confirm). A UNC path is left unchanged with a warning, because share permissions decide who can write there. A folder that does not exist yet (under -WhatIf) is skipped.
+
+    .PARAMETER Path
+        Full path of the folder, as returned by Resolve-DirectoryPath.
+
+    .PARAMETER Check
+        Children checks the direct children, All checks everything below the folder.
+
+    .EXAMPLE
+        Protect-ServicingDirectory -Path 'C:\ProgramData\WindowsIsoServicing\Cache' -Check All
+
+    .OUTPUTS
+        None.
+
+    .NOTES
+        Author:  Lars Krogh Paulsen
+        Version: 1.0.0
+
+    .LINK
+        https://learn.microsoft.com/dotnet/api/system.security.accesscontrol.directorysecurity
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [ValidateSet('Children', 'All')]
+        [string]$Check = 'Children'
+    )
+    if ($Path.StartsWith('\\')) {
+        Write-Warning "'$Path' is a network share; its permissions are not changed. Make sure only administrators can write to it, because its content goes into serviced media."
+        return
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return }
+    $systemSid = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18')
+    $administratorsSid = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')
+    $trustedOwners = [System.Collections.Generic.HashSet[string]]::new([string[]]@($systemSid.Value, $administratorsSid.Value, 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464', [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value))
+    $folder = Get-Item -LiteralPath $Path -Force
+    $items = [System.Collections.Generic.List[System.IO.FileSystemInfo]]::new()
+    for ($ancestor = $folder; $ancestor; $ancestor = $ancestor.Parent) { $items.Add($ancestor) }
+    foreach ($child in Get-ChildItem -LiteralPath $Path -Force -Recurse:($Check -eq 'All')) { $items.Add($child) }
+    $untrusted = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in $items) {
+        if ($item.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+            $untrusted.Add("$($item.FullName) (link)")
+            continue
+        }
+        $owner = (Get-Acl -LiteralPath $item.FullName).GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+        if (-not $trustedOwners.Contains($owner)) { $untrusted.Add("$($item.FullName) (owner $owner)") }
+    }
+    if ($untrusted.Count) {
+        throw "Refusing to use '$Path': these items are links or are owned by an account other than SYSTEM, Administrators or the current user, so another user could change what goes into the serviced media: $($untrusted -join '; '). Delete them as an administrator, or choose a folder that an administrator created."
+    }
+    $protected = [System.Security.AccessControl.DirectorySecurity]::new()
+    $protected.SetOwner($administratorsSid)
+    $protected.SetAccessRuleProtection($true, $false)
+    foreach ($sid in $systemSid, $administratorsSid) {
+        $protected.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid, [System.Security.AccessControl.FileSystemRights]::FullControl, [System.Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit', [System.Security.AccessControl.PropagationFlags]::None, [System.Security.AccessControl.AccessControlType]::Allow))
+    }
+    $current = Get-Acl -LiteralPath $Path
+    $currentRules = @($current.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]) | ForEach-Object { '{0}|{1}|{2}|{3}|{4}' -f $_.IdentityReference.Value, $_.FileSystemRights, $_.InheritanceFlags, $_.PropagationFlags, $_.AccessControlType } | Sort-Object) -join ';'
+    $protectedRules = @($protected.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]) | ForEach-Object { '{0}|{1}|{2}|{3}|{4}' -f $_.IdentityReference.Value, $_.FileSystemRights, $_.InheritanceFlags, $_.PropagationFlags, $_.AccessControlType } | Sort-Object) -join ';'
+    if ($current.AreAccessRulesProtected -and $current.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -eq $administratorsSid.Value -and $currentRules -eq $protectedRules) { return }
+    if ($PSCmdlet.ShouldProcess($Path, 'Restrict access to SYSTEM and Administrators')) {
+        Set-Acl -LiteralPath $Path -AclObject $protected
+    }
+}

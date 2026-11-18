@@ -10,6 +10,8 @@ Hard constraints. A change that breaks one of these is wrong, whatever else it a
    Enforced by: staging plus the validation gate in `Update-WindowsISO`; `Publish-WindowsISO` refuses `validation.passed = false` and checksum mismatches; `tests/Unit/UpdateWindowsIso.Tests.ps1`, `tests/Unit/Publish.Tests.ps1`.
 3. **Installation success is reported only when an installation test actually ran and passed.** Structural and installation validation are recorded separately (`validation.structural`, `validation.bootTest.performed`).
    Enforced by: `Invoke-HyperVBootTest` (result defaults to `Failed`); code review.
+4. **Only SYSTEM and Administrators can change the workspace and the cache.** A run stops when the folder, a parent folder or an item in it is a link or is owned by another account.
+   Enforced by: `Protect-ServicingDirectory` in `Update-WindowsISO`, `Save-WindowsISOUpdate` and `Test-WindowsISO`; `tests/Unit/UpdateWindowsIso.Tests.ps1`.
 
 ## Lifecycle and licensing
 

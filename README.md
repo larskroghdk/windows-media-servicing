@@ -36,7 +36,7 @@ Get-InstalledPSResource -Name WindowsIsoServicing
 ## 🚀 Quick start
 
 ```powershell
-# Elevated PowerShell 7.4+, HTTPS access to the Microsoft Update Catalog and the MSRC API
+# Elevated PowerShell 7.4+, the Windows ADK Deployment Tools, HTTPS access to the Microsoft Update Catalog and the MSRC API
 Import-Module .\src\WindowsIsoServicing
 Get-WindowsISOInfo -SourceISO 'D:\ISO\Windows_Server_2025.iso'
 Get-WindowsISOUpdates -SourceISO 'D:\ISO\Windows_Server_2025.iso'
@@ -142,7 +142,7 @@ The build:
 1. finds the module under `src`, runs `Test-ModuleManifest`, and checks what the Gallery requires: author,
    description, an https `ProjectUri`, and `FunctionsToExport` without wildcards, each with its `Public\<name>.ps1`;
 2. copies only runtime files to a staging folder: the manifest, `WindowsIsoServicing.psm1`, `Public\*.ps1`,
-   `Private\*.ps1`, `Data\*.psd1` and `Resources\oscdimg.exe`. The Microsoft signature of `oscdimg.exe` is checked.
+   `Private\*.ps1` and `Data\*.psd1`. No executables are packaged; `oscdimg.exe` comes from the Windows ADK.
    Any other file in the module folder is left out with a warning. Tests, docs, scripts and configuration are outside
    the module folder and are never included;
 3. builds the package with `Compress-PSResource` and checks the nuspec id, version and dependencies against the

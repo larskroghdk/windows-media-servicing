@@ -237,7 +237,7 @@ standalone script, not a Pester test, and it never runs in CI.
 | PowerShell | 7.4 or later, elevated (`#Requires -RunAsAdministrator`). |
 | Hyper-V | The Hyper-V role and its PowerShell module on an x64 host running Windows 10, Windows Server 2016 or later (PowerShell Direct needs that host). Your account must be allowed to manage Hyper-V; an elevated administrator is. |
 | Host resources | Free memory of at least `-MemoryGB` (4 GB by default) and 40 GB free in `-WorkingDirectory`. |
-| OSCDIMG | Not installed separately. The answer ISO is built with the Microsoft-signed `oscdimg.exe` in the module's `Resources` folder, or from an installed Windows ADK when that copy is missing; the signature is checked before use. The Windows ADK isn't required. |
+| Windows ADK | The Deployment Tools feature, for the `oscdimg.exe` that builds the answer ISO; its Microsoft signature is checked before use ([requirements.md](../../docs/requirements.md#-oscdimg)). |
 | Media | An x64 ISO, normally one created by `Update-WindowsISO`. The ISO must not be mounted on the host. |
 | Network | Not required. Without `-SwitchName` the VM has no network adapter and installs offline. |
 

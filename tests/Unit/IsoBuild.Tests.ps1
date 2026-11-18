@@ -198,40 +198,20 @@ Describe 'Find-Oscdimg' {
         }
         $script:Installations = @([pscustomobject]@{ Root = $script:AdkPrimary; Source = 'Registry (test)'; Version = '10.1.28000.3481' }, [pscustomobject]@{ Root = $script:AdkSecondary; Source = 'Default folder'; Version = '10.1.28000.3481' })
     }
-    It 'returns the copy shipped in the module Resources folder first' {
-        InModuleScope WindowsIsoServicing -Parameters @{ Installations = $script:Installations } {
-            Mock Test-MicrosoftSignature { $true }
-            Mock Get-WindowsAdkInstallation { $Installations }
-            $result = Find-Oscdimg
-            $result.Path | Should -BeLike '*\WindowsIsoServicing\Resources\oscdimg.exe'
-            $result.Source | Should -BeLike 'Bundled*'
-            $result.FileVersion | Should -Match '^\d+\.\d+\.\d+\.\d+$'
-            $result.AdkVersion | Should -BeNullOrEmpty
-        }
-    }
-    It 'falls back to the first ADK installation and the host architecture when the bundled copy is missing' {
+    It 'uses the first ADK installation and the folder for the host architecture' {
         InModuleScope WindowsIsoServicing -Parameters @{ Installations = $script:Installations; Expected = (Join-Path $script:AdkPrimary "$script:AdkRelative\amd64\Oscdimg\oscdimg.exe") } {
             Mock Test-MicrosoftSignature { $true }
             Mock Get-WindowsAdkInstallation { $Installations }
-            Mock Test-Path { $false } -ParameterFilter { $LiteralPath -like '*\Resources\oscdimg.exe' }
             $result = Find-Oscdimg -HostArchitecture X64
             $result.Path | Should -Be $Expected
             $result.Source | Should -Be 'Registry (test)'
             $result.AdkVersion | Should -Be '10.1.28000.3481'
         }
     }
-    It 'falls back to the ADK when the bundled copy is not signed by Microsoft' {
-        InModuleScope WindowsIsoServicing -Parameters @{ Installations = $script:Installations } {
-            Mock Test-MicrosoftSignature { $Path -notlike '*\Resources\oscdimg.exe' }
-            Mock Get-WindowsAdkInstallation { $Installations }
-            (Find-Oscdimg -HostArchitecture X64).Source | Should -Be 'Registry (test)'
-        }
-    }
     It 'prefers arm64 on an Arm64 host' {
         InModuleScope WindowsIsoServicing -Parameters @{ Installations = $script:Installations; Expected = (Join-Path $script:AdkPrimary "$script:AdkRelative\arm64\Oscdimg\oscdimg.exe") } {
             Mock Test-MicrosoftSignature { $true }
             Mock Get-WindowsAdkInstallation { $Installations }
-            Mock Test-Path { $false } -ParameterFilter { $LiteralPath -like '*\Resources\oscdimg.exe' }
             (Find-Oscdimg -HostArchitecture Arm64).Path | Should -Be $Expected
         }
     }
@@ -239,17 +219,18 @@ Describe 'Find-Oscdimg' {
         InModuleScope WindowsIsoServicing -Parameters @{ Installations = $script:Installations; Primary = $script:AdkPrimary; Expected = (Join-Path $script:AdkSecondary "$script:AdkRelative\amd64\Oscdimg\oscdimg.exe") } {
             Mock Test-MicrosoftSignature { -not $Path.StartsWith($Primary) }
             Mock Get-WindowsAdkInstallation { $Installations }
-            Mock Test-Path { $false } -ParameterFilter { $LiteralPath -like '*\Resources\oscdimg.exe' }
             (Find-Oscdimg -HostArchitecture X64).Path | Should -Be $Expected
         }
     }
-    It 'throws OscdimgNotFound with installation instructions when neither the bundled copy nor the ADK exists' {
+    It 'throws OscdimgNotFound with ADK installation instructions when no ADK is installed, and looks nowhere else' {
         InModuleScope WindowsIsoServicing {
             Mock Get-WindowsAdkInstallation { }
-            Mock Test-Path { $false } -ParameterFilter { $LiteralPath -like '*\Resources\oscdimg.exe' }
+            Mock Test-MicrosoftSignature { throw 'no candidate must be checked' }
             $failure = { Find-Oscdimg } | Should -Throw -PassThru
             $failure.FullyQualifiedErrorId | Should -BeLike 'OscdimgNotFound*'
-            $failure.Exception.Message | Should -BeLike '*adksetup.exe /quiet /norestart /features OptionId.DeploymentTools*-OscdimgPath*'
+            $failure.Exception.Message | Should -BeLike '*none is installed*adksetup.exe /quiet /norestart /features OptionId.DeploymentTools*-OscdimgPath*'
+            $failure.Exception.Message | Should -Not -BeLike '*Resources*'
+            Should -Invoke Test-MicrosoftSignature -Times 0
         }
     }
     It 'names refused files in the error' {

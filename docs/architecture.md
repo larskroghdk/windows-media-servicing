@@ -23,7 +23,6 @@ src/WindowsIsoServicing/
     Manifest.ps1                       Manifest schema, read/write, update-set signature
     Validation.ps1                     Structural validation and Hyper-V installation test
     Workspace.ps1                      Per-run workspace layout and cleanup
-  Resources/oscdimg.exe                OSCDIMG from the Windows ADK (Microsoft-signed), used to build the ISO
 scripts/Invoke-IsoServicingPipeline.ps1  Unattended runner for CI and Task Scheduler
 scripts/Invoke-QualityGate.ps1           Lint (including skill definitions), parse check and unit tests (wrapped by the Makefile)
 scripts/Build-ModulePackage.ps1          Builds and validates the PowerShell Gallery package (.nupkg) and its build report
@@ -67,7 +66,7 @@ removed (unless `-KeepWorkspace`), and the locks are released.
 
 ## 🧭 Design decisions
 
-- **Native tooling only.** The DISM PowerShell cmdlets handle mount, add-package, dismount, export and split. `dism.exe` is called only for `/Cleanup-Image`, which has no cmdlet, with `/English` and explicit exit-code handling. OSCDIMG ships in `Resources`; `-OscdimgPath` overrides it, and an installed Windows ADK is the fallback when the bundled copy is missing ([requirements.md](requirements.md#-oscdimg)). Its Microsoft signature is checked before every use. The boot sector files come from the source media, so the ADK is not required.
+- **Native tooling only.** The DISM PowerShell cmdlets handle mount, add-package, dismount, export and split. `dism.exe` is called only for `/Cleanup-Image`, which has no cmdlet, with `/English` and explicit exit-code handling. OSCDIMG comes from the installed Windows ADK Deployment Tools, or from `-OscdimgPath` ([requirements.md](requirements.md#-oscdimg)); the module ships no Microsoft executables. Its Microsoft signature is checked before every use. The boot sector files come from the source media, so OSCDIMG is the only ADK file used.
 - **Public Microsoft update sources only.** The MSRC Security Updates API provides the security baseline, and the Microsoft Update Catalog provides discovery, supersedence and files. The host's Windows Update and WSUS configuration is never used. The Catalog has no documented API; its page parsing is isolated in `MicrosoftUpdateCatalog.ps1` and fails with `CatalogFormatChanged` when the pages change. See [update-discovery.md](update-discovery.md).
 - **Data-driven release model.** Every per-release difference lives in `Data/OperatingSystems.psd1`: separate or combined servicing stack, checkpoint updates, Dynamic Update availability, lifecycle dates and title product text. The servicing code branches on these flags, not on build numbers. The one exception is `setuphost.exe`, which Microsoft documents as build 26100 and later.
 - **Locks** are lock files opened with `FileShare.None`, so a lock is released when its process exits.

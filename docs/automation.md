@@ -19,7 +19,7 @@
 | `storePath` | Yes | Artifact store root (file share). ISOs are stored here, outside Git. |
 | `updateSource.repositoryPath` | No | Service from a package repository instead of the Microsoft Update Catalog. Omit `updateSource` to use the Catalog. Any other `updateSource` property (such as the removed `wsusServer`) is a configuration error. |
 | `workspacePath`, `cachePath` | No | Defaults to `%ProgramData%\WindowsIsoServicing\…` |
-| `oscdimgPath` | No | `oscdimg.exe`, or a Windows ADK folder, passed to `Update-WindowsISO -OscdimgPath`. Omit it to use the bundled copy, then the installed ADK ([requirements.md](requirements.md#-oscdimg)). |
+| `oscdimgPath` | No | `oscdimg.exe`, or a Windows ADK folder, passed to `Update-WindowsISO -OscdimgPath`. Omit it to use the installed Windows ADK ([requirements.md](requirements.md#-oscdimg)). |
 | `retainCount` | No | Versions kept per media key (default 3) |
 | `patchTuesdayDelayDays` | No | Default 2 |
 | `media[].name`, `media[].sourceIso` | Yes | Media entry |
@@ -58,7 +58,8 @@ Hyper-V for boot tests, and network access to the internal file share. Use a **s
 Windows runner** with the labels `self-hosted, windows, iso-servicing`. Set it up as follows:
 
 - Run the runner service as an account that is a local administrator, because DISM requires elevation.
-- Install PowerShell 7.4+. OSCDIMG ships with the module, so the Windows ADK is not needed.
+- The repository is public, and a pull request from a fork can change any workflow to run on this runner. Under Settings > Actions > General > *Approval for running fork pull request workflows from contributors*, select *Require approval for all external contributors*, and review a fork pull request's workflow changes before approving it. GitHub recommends against self-hosted runners for public repositories; a private repository avoids the problem.
+- Install PowerShell 7.4+ and the Windows ADK Deployment Tools ([requirements.md](requirements.md#-oscdimg)).
 - Provide a dedicated local NTFS data volume, excluded from antivirus scanning.
 - Set the repository variable `ISO_SERVICING_CONFIG` to the configuration path on the runner.
 - Allow outbound HTTPS to the Microsoft Update Catalog, the MSRC API and the Microsoft download hosts (see [requirements.md](requirements.md#-update-source)), and give the runner account access to the store share. No credentials are kept in the repository.

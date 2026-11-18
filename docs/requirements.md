@@ -7,7 +7,7 @@
 | Operating system | Windows 11 or Windows Server 2022/2025. The host's DISM must be the same version as the media being serviced, or newer. Service Windows Server 2025 / Windows 11 24H2+ media from a 26100+ host. |
 | PowerShell | PowerShell 7.4 or later. |
 | Elevation | Every command except `Get-WindowsISOManifest` and `Publish-WindowsISO` must run elevated. |
-| OSCDIMG | Ships with the module (`Resources\oscdimg.exe`, from the Windows ADK Deployment Tools), so the Windows ADK does not need to be installed. An installed ADK is the fallback. See [OSCDIMG](#-oscdimg). |
+| Windows ADK | The Deployment Tools feature of the [Windows ADK](https://learn.microsoft.com/windows-hardware/get-started/adk-install), for `oscdimg.exe`. The module does not ship it. See [OSCDIMG](#-oscdimg). |
 | DISM PowerShell module | Built into Windows (`Dism`). |
 | Storage | A local NTFS volume for the workspace. The path must contain no whitespace (OSCDIMG boot arguments cannot be quoted). Plan on twice the ISO size, plus twice the update size, plus the largest image size, plus 20 GB. `Update-WindowsISO` checks this before it starts. |
 | Antivirus | Exclude the workspace from real-time scanning. Scanning mounted images slows DISM a lot and can cause dismount failures. |
@@ -15,21 +15,20 @@
 
 ## 💿 OSCDIMG
 
-`oscdimg.exe` is the only file the module needs from the Windows ADK. The boot files (`etfsboot.com`,
-`efisys_noprompt.bin`) come from the source media, so they always match its boot manager. The copy is chosen in this
-order, and the first one with a valid Microsoft Authenticode signature is used:
+`oscdimg.exe` is the only file the module needs from the Windows ADK, and the ADK must be installed to build ISOs. The
+boot files (`etfsboot.com`, `efisys_noprompt.bin`) come from the source media, so they always match its boot manager.
+The copy is chosen in this order, and the first one with a valid Microsoft Authenticode signature is used:
 
 1. `-OscdimgPath` (or `oscdimgPath` in the pipeline configuration): a file, or a folder that holds `oscdimg.exe` or a
    Windows ADK installation (for example `D:\Windows Kits\10`). When this file is refused, no other copy is tried.
-2. The bundled `Resources\oscdimg.exe`.
-3. The Windows ADK Deployment Tools: the folder in `KitsRoot10` under
+2. The Windows ADK Deployment Tools: the folder in `KitsRoot10` under
    `HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots`, then `%ProgramFiles(x86)%\Windows Kits\10`.
    Within an installation the host architecture comes first (`amd64` on x64, `arm64` on Arm64), then `x86`.
 
 The run log records the path, file version and source of the copy used. The module never downloads or installs the
-ADK. If the bundled copy is gone and no ADK is installed, install the
-[Windows ADK](https://learn.microsoft.com/windows-hardware/get-started/adk-install) with only the Deployment Tools
-feature (`adksetup.exe /quiet /norestart /features OptionId.DeploymentTools`); the Windows PE add-on is not needed.
+ADK. Install the [Windows ADK](https://learn.microsoft.com/windows-hardware/get-started/adk-install) with only the
+Deployment Tools feature (`adksetup.exe /quiet /norestart /features OptionId.DeploymentTools`); the Windows PE add-on
+is not needed. `Update-WindowsISO` looks for it before it mounts anything, so a missing ADK stops the run at once.
 
 ## 🌐 Update source
 
@@ -53,4 +52,6 @@ cache filled by an earlier online run can be used as a repository. With a reposi
 ## 🔐 Permissions
 
 - The account running servicing needs read access to the source ISO, write access to the workspace, cache, output and log folders, and write access to the artifact store when it publishes.
+- The workspace and the cache hold what goes into the serviced media, so each run restricts them to SYSTEM and Administrators (owner Administrators, no inherited permissions). Before that, the run stops if the folder, a parent folder, or anything in it is a link or is owned by another account: under `%ProgramData%` every user can create folders and files, and whoever creates one first could change packages or media after they were checked. Delete such items as an administrator and run again. A workspace or cache on a share is not changed, and its share permissions must allow writes by administrators only.
+- `OutputPath`, the log folder and the artifact store are not changed. Give only administrators write access to them, because `Publish-WindowsISO` trusts the manifest and checksum it finds next to the ISO.
 - No credentials are stored in configuration. The update sources need no authentication, and file share access uses the identity of the process.
