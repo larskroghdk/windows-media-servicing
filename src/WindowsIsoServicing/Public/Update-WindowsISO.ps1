@@ -80,7 +80,7 @@ function Update-WindowsISO {
 
     .PARAMETER OscdimgPath
         Path to oscdimg.exe, or to a folder that contains it or the Windows ADK (for example 'D:\Windows Kits\10').
-        Defaults to the copy in the module's Resources folder, then to the installed Windows ADK Deployment Tools. The
+        Defaults to the installed Windows ADK Deployment Tools. The
         file must carry a valid Microsoft Authenticode signature.
 
     .PARAMETER KeepWorkspace
@@ -162,6 +162,8 @@ function Update-WindowsISO {
     $output = Resolve-DirectoryPath -Path $OutputPath -Create
     $workspace = Resolve-DirectoryPath -Path $WorkspacePath -Create
     $cache = Resolve-DirectoryPath -Path $CachePath -Create
+    Protect-ServicingDirectory -Path $workspace -Confirm:$false
+    Protect-ServicingDirectory -Path $cache -Check All -Confirm:$false
     $logDirectory = if ($LogPath) { Resolve-DirectoryPath -Path $LogPath -Create } else { Join-Path $output "logs\$runId" }
     $oscdimg = Find-Oscdimg -Path $OscdimgPath
     $repository = if ($RepositoryPath) { Resolve-DirectoryPath -Path $RepositoryPath }
@@ -170,6 +172,7 @@ function Update-WindowsISO {
     Write-ServicingLog -Operation 'Start' -Target $oscdimg.Path -Message "Using oscdimg.exe $($oscdimg.FileVersion) from $($oscdimg.Source)$(if ($oscdimg.AdkVersion) { ", Windows ADK Deployment Tools $($oscdimg.AdkVersion)" })"
     $workspaceLock = $null
     $outputLock = $null
+    $cacheLock = $null
     $context = $null
     $mediaRoot = $null
 
@@ -180,6 +183,9 @@ function Update-WindowsISO {
         if (-not $WhatIfPreference) {
             $workspaceLock = Lock-Directory -Directory $workspace
             $outputLock = Lock-Directory -Directory $output
+            if ($cache -notin $workspace, $output) { $cacheLock = Lock-Directory -Directory $cache }
+            $leftoverMounts = @(Clear-ServicingMount -Root $workspace -Confirm:$false)
+            if ($leftoverMounts) { throw "Images from an earlier run are still mounted under the workspace and could not be discarded: $($leftoverMounts -join ', '). Close the processes that use them, run 'dism /Cleanup-Mountpoints', and start again." }
         }
         $sourceSha256 = Get-FileSha256 -Path $isoPath
         $sourceSize = (Get-Item -LiteralPath $isoPath).Length
@@ -405,6 +411,7 @@ function Update-WindowsISO {
                 Remove-ServicingWorkspace -Context $context -Confirm:$false
             }
         }
+        Unlock-Directory -Lock $cacheLock
         Unlock-Directory -Lock $outputLock
         Unlock-Directory -Lock $workspaceLock
         Stop-ServicingLog

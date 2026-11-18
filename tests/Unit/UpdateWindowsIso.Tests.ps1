@@ -22,7 +22,8 @@ Describe 'Update-WindowsISO orchestration' {
         $paths.Previous = $previous
         InModuleScope WindowsIsoServicing -Parameters @{ Paths = $paths } {
             Mock Assert-Administrator { }
-            Mock Find-Oscdimg { [pscustomobject]@{ Path = 'C:\oscdimg.exe'; FileVersion = '2.56.0.1010'; AdkVersion = $null; Source = 'Bundled (Resources\oscdimg.exe)' } }
+            Mock Protect-ServicingDirectory { }
+            Mock Find-Oscdimg { [pscustomobject]@{ Path = 'C:\oscdimg.exe'; FileVersion = '2.56.0.1010'; AdkVersion = '10.1.28000.3481'; Source = 'Registry (HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots)' } }
             Mock Mount-IsoImage { $Paths.Media }
             Mock Dismount-IsoImage { }
             Mock Get-IsoVolumeLabel { 'SSS_X64FREE_EN-US_DV9' }
@@ -161,6 +162,127 @@ Describe 'Update-WindowsISO orchestration' {
                 }
             }
             { Update-WindowsISO -SourceISO $Paths.Source -OutputPath $Paths.Output -RepositoryPath $Paths.Root -WorkspacePath $Paths.Workspace -CachePath $Paths.Cache -Index 1 -Confirm:$false } | Should -Throw -ErrorId 'OutOfSupportMedia*'
+        }
+    }
+}
+
+Describe 'Update-WindowsISO workspace and cache safety' {
+    BeforeEach {
+        $root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $paths = @{ Source = Join-Path $root 'Windows_Server_2025.iso'; Output = Join-Path $root 'output'; Workspace = Join-Path $root 'workspace'; Cache = Join-Path $root 'cache' }
+        $null = New-Item -Path $root -ItemType Directory -Force
+        Set-Content -LiteralPath $paths.Source -Value 'source-iso' -NoNewline
+    }
+    It 'protects the workspace and the whole cache before the ISO is mounted, and stops when protection refuses' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Paths = $paths } {
+            Mock Assert-Administrator { }
+            Mock Find-Oscdimg { [pscustomobject]@{ Path = 'C:\oscdimg.exe'; FileVersion = '2.56.0.1010'; AdkVersion = '10.1.28000.3481'; Source = 'Registry (HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots)' } }
+            Mock Protect-ServicingDirectory { } -ParameterFilter { $Path -eq $Paths.Workspace }
+            Mock Protect-ServicingDirectory { throw "Refusing to use '$Path'" } -ParameterFilter { $Path -eq $Paths.Cache }
+            Mock Mount-IsoImage { throw 'must not be reached' }
+            { Update-WindowsISO -SourceISO $Paths.Source -OutputPath $Paths.Output -WorkspacePath $Paths.Workspace -CachePath $Paths.Cache -Confirm:$false } | Should -Throw "Refusing to use '$($Paths.Cache)'"
+            Should -Invoke Protect-ServicingDirectory -Times 1 -Exactly -ParameterFilter { $Path -eq $Paths.Workspace -and $Check -ne 'All' }
+            Should -Invoke Protect-ServicingDirectory -Times 1 -Exactly -ParameterFilter { $Path -eq $Paths.Cache -and $Check -eq 'All' }
+            Should -Invoke Mount-IsoImage -Times 0
+        }
+    }
+    It 'refuses to share the cache with a run that holds it' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Paths = $paths } {
+            Mock Assert-Administrator { }
+            Mock Protect-ServicingDirectory { }
+            Mock Find-Oscdimg { [pscustomobject]@{ Path = 'C:\oscdimg.exe'; FileVersion = '2.56.0.1010'; AdkVersion = '10.1.28000.3481'; Source = 'Registry (HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots)' } }
+            Mock Clear-ServicingMount { }
+            Mock Mount-IsoImage { throw 'must not be reached' }
+            $null = New-Item -Path $Paths.Cache -ItemType Directory -Force
+            $held = Lock-Directory -Directory $Paths.Cache
+            try {
+                { Update-WindowsISO -SourceISO $Paths.Source -OutputPath $Paths.Output -WorkspacePath $Paths.Workspace -CachePath $Paths.Cache -Confirm:$false } | Should -Throw "*'$($Paths.Cache)' is locked by another*"
+            }
+            finally {
+                Unlock-Directory -Lock $held
+            }
+            Should -Invoke Mount-IsoImage -Times 0
+            Test-Path -LiteralPath (Join-Path $Paths.Workspace '.windows-iso-servicing.lock') | Should -BeFalse -Because 'the workspace lock is released'
+        }
+    }
+    It 'discards images left mounted by a crashed run, and stops when one cannot be discarded' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Paths = $paths } {
+            Mock Assert-Administrator { }
+            Mock Protect-ServicingDirectory { }
+            Mock Find-Oscdimg { [pscustomobject]@{ Path = 'C:\oscdimg.exe'; FileVersion = '2.56.0.1010'; AdkVersion = '10.1.28000.3481'; Source = 'Registry (HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots)' } }
+            Mock Clear-ServicingMount { "$Root\20261117-080000-1a2b3c4d\mount\install-1" }
+            Mock Mount-IsoImage { throw 'must not be reached' }
+            { Update-WindowsISO -SourceISO $Paths.Source -OutputPath $Paths.Output -WorkspacePath $Paths.Workspace -CachePath $Paths.Cache -Confirm:$false } | Should -Throw '*still mounted under the workspace*dism /Cleanup-Mountpoints*'
+            Should -Invoke Clear-ServicingMount -Times 1 -Exactly -ParameterFilter { $Root -eq $Paths.Workspace }
+            Should -Invoke Mount-IsoImage -Times 0
+        }
+    }
+}
+
+Describe 'Protect-ServicingDirectory' {
+    BeforeEach {
+        $folder = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $null = New-Item -Path "$folder\packages\KB5070000" -ItemType Directory -Force
+        Set-Content -LiteralPath "$folder\packages\KB5070000\windows11.0-kb5070000-x64.msu" -Value 'msu'
+    }
+    It 'restricts a folder the current user owns to SYSTEM and Administrators, with Administrators as owner' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Protect-ServicingDirectory -Path $Folder -Check All -Confirm:$false
+            Should -Invoke Set-Acl -Times 1 -Exactly -ParameterFilter {
+                $sddl = $AclObject.GetSecurityDescriptorSddlForm([System.Security.AccessControl.AccessControlSections]'Owner, Access')
+                $LiteralPath -eq $Folder -and $AclObject.AreAccessRulesProtected -and $sddl -match '^O:BA' -and $sddl -match '\(A;OICI;FA;;;SY\)' -and $sddl -match '\(A;OICI;FA;;;BA\)' -and @($AclObject.Access).Count -eq 2
+            }
+        }
+    }
+    It 'refuses a cached file owned by another user, and changes nothing' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Mock Get-Acl { [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name GetOwner -Value { param($type) [System.Security.Principal.SecurityIdentifier]::new('S-1-5-21-1111111111-2222222222-3333333333-1001') } -PassThru } -ParameterFilter { $LiteralPath -like '*.msu' }
+            { Protect-ServicingDirectory -Path $Folder -Check All -Confirm:$false } | Should -Throw '*windows11.0-kb5070000-x64.msu (owner S-1-5-21-1111111111-2222222222-3333333333-1001)*'
+            Should -Invoke Set-Acl -Times 0
+        }
+    }
+    It 'checks only the direct children of a workspace' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Mock Get-Acl { [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name GetOwner -Value { param($type) [System.Security.Principal.SecurityIdentifier]::new('S-1-5-21-1111111111-2222222222-3333333333-1001') } -PassThru } -ParameterFilter { $LiteralPath -like '*.msu' }
+            Protect-ServicingDirectory -Path $Folder -Confirm:$false
+            Should -Invoke Set-Acl -Times 1 -Exactly
+        }
+    }
+    It 'refuses a link inside the folder' {
+        $target = New-Item -Path "$folder-target" -ItemType Directory -Force
+        $null = New-Item -Path "$folder\redirect" -ItemType Junction -Value $target.FullName
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            { Protect-ServicingDirectory -Path $Folder -Confirm:$false } | Should -Throw '*redirect (link)*'
+            Should -Invoke Set-Acl -Times 0
+        }
+    }
+    It 'refuses a folder whose parent another user owns' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Mock Get-Acl { [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name GetOwner -Value { param($type) [System.Security.Principal.SecurityIdentifier]::new('S-1-5-21-1111111111-2222222222-3333333333-1001') } -PassThru } -ParameterFilter { $LiteralPath -eq (Split-Path -Parent $Folder) }
+            { Protect-ServicingDirectory -Path $Folder -Confirm:$false } | Should -Throw "*$((Split-Path -Parent $Folder).Replace('\', '?')) (owner S-1-5-21-*"
+            Should -Invoke Set-Acl -Times 0
+        }
+    }
+    It 'does not rewrite an access list that is already restricted' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Mock Get-Acl { $stored = [System.Security.AccessControl.DirectorySecurity]::new(); $stored.SetSecurityDescriptorSddlForm('O:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)'); $stored } -ParameterFilter { $LiteralPath -eq $Folder }
+            Protect-ServicingDirectory -Path $Folder -Confirm:$false
+            Should -Invoke Set-Acl -Times 0
+        }
+    }
+    It 'changes nothing under -WhatIf and leaves network shares to their share permissions' {
+        InModuleScope WindowsIsoServicing -Parameters @{ Folder = $folder } {
+            Mock Set-Acl { }
+            Protect-ServicingDirectory -Path $Folder -WhatIf
+            Protect-ServicingDirectory -Path '\\fs01\cache' -Confirm:$false -WarningVariable warnings -WarningAction SilentlyContinue
+            "$warnings" | Should -BeLike '*network share*only administrators can write*'
+            Should -Invoke Set-Acl -Times 0
         }
     }
 }

@@ -50,7 +50,7 @@ Every file has one owner. The owner changes it; other skills report findings to 
 | --- | --- | --- |
 | `senior-powershell-developer` | PowerShell standards for all code; module structure, public command contracts, `Environment.ps1`, `Logging.ps1`, `Manifest.ps1`, `Workspace.ps1`, `Invoke-QualityGate.ps1` lint rules; code review | Domain decisions in the areas below, test strategy, documentation files |
 | `windows-servicing-engineer` | `ImageServicing.ps1`, `OperatingSystem.ps1`, `Data/OperatingSystems.psd1`, docs/servicing.md | Package selection, ISO build and boot |
-| `windows-media-engineer` | `IsoMedia.ps1`, `IsoBuild.ps1`, `Validation.ps1`, `Test-WindowsISO`, `Resources/oscdimg.exe`, the live installation test | What goes into the images |
+| `windows-media-engineer` | `IsoMedia.ps1`, `IsoBuild.ps1`, `Validation.ps1`, `Test-WindowsISO`, `Find-Oscdimg`, the live installation test | What goes into the images |
 | `microsoft-update-specialist` | `MicrosoftUpdateCatalog.ps1`, `MsrcSecurityUpdate.ps1`, `UpdateDiscovery.ps1`, `PackageCache.ps1`, `tests/Unit/Fixtures`, docs/update-discovery.md | Applying packages |
 | `release-engineer` | `.github/`, packaging, publish and dependency scripts, `Invoke-IsoServicingPipeline.ps1`, `Publish-WindowsISO`, docs/automation.md | Servicing logic, unit test design |
 | `senior-software-tester` | Test strategy, Pester tests, running tests, defect reports, release readiness | Production fixes |

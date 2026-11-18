@@ -47,7 +47,7 @@ function Find-Oscdimg {
         Locates and validates the oscdimg.exe used to build ISO images.
 
     .DESCRIPTION
-        With Path, that file is used, or, for a folder, its oscdimg.exe or the one under Assessment and Deployment Kit\Deployment Tools\<architecture>\Oscdimg. Otherwise the copy bundled in the module's Resources folder is used, so the Windows ADK is not needed; when that copy is missing or refused, the Windows ADK Deployment Tools are searched, in the order of Get-WindowsAdkInstallation. Only operations that build an ISO call this. Within an installation the folder for the host architecture is preferred (amd64 on x64, arm64 on Arm64), then the ones Windows can run under emulation, so the choice is the same on every run. The system PATH is not used. A candidate must be a file with a valid Microsoft Authenticode signature; a file that cannot be read or is not signed by Microsoft is refused, and with Path that stops the search, because an explicit choice must not be replaced silently. Throws with installation instructions when nothing usable is found. Whether the file runs is shown by its first use, whose exit code Invoke-ExternalTool checks.
+        oscdimg.exe is part of the Windows ADK Deployment Tools and is not shipped with the module, so the ADK must be installed on the servicing host. With Path, that file is used, or, for a folder, its oscdimg.exe or the one under Assessment and Deployment Kit\Deployment Tools\<architecture>\Oscdimg. Otherwise the installed Windows ADK Deployment Tools are searched, in the order of Get-WindowsAdkInstallation. Only operations that build an ISO call this. Within an installation the folder for the host architecture is preferred (amd64 on x64, arm64 on Arm64), then the ones Windows can run under emulation, so the choice is the same on every run. The system PATH is not used. A candidate must be a file with a valid Microsoft Authenticode signature; a file that cannot be read or is not signed by Microsoft is refused, and with Path that stops the search, because an explicit choice must not be replaced silently. Throws with installation instructions when nothing usable is found. Whether the file runs is shown by its first use, whose exit code Invoke-ExternalTool checks.
 
     .PARAMETER Path
         oscdimg.exe, or a folder that contains it or the ADK (for example 'D:\Windows Kits\10').
@@ -93,7 +93,6 @@ function Find-Oscdimg {
         }
     }
     else {
-        $candidates.Add([pscustomobject]@{ Path = Join-Path $PSScriptRoot '..\Resources\oscdimg.exe'; Source = 'Bundled (Resources\oscdimg.exe)'; AdkVersion = $null })
         foreach ($installation in Get-WindowsAdkInstallation) {
             foreach ($folder in $architectureFolders) {
                 $candidates.Add([pscustomobject]@{ Path = Join-Path $installation.Root "Assessment and Deployment Kit\Deployment Tools\$folder\Oscdimg\oscdimg.exe"; Source = $installation.Source; AdkVersion = $installation.Version })
@@ -124,9 +123,9 @@ function Find-Oscdimg {
             Source      = $candidate.Source
         }
     }
-    $searched = if ($Path) { "'$Path'" } else { "the module's Resources folder or a Windows ADK installation (searched: $(@($candidates.Path | Split-Path -Parent | Select-Object -Unique) -join ', '))" }
+    $searched = if ($Path) { "'$Path'" } else { $(if ($candidates.Count) { "a Windows ADK installation (searched: $(@($candidates.Path | Split-Path -Parent | Select-Object -Unique) -join ', '))" } else { 'a Windows ADK installation: none is installed' }) }
     $reason = if ($refused.Count) { " Refused: $($refused -join '; ')." } else { '' }
-    $exception = [System.IO.FileNotFoundException]::new("No usable oscdimg.exe was found in $searched.$reason oscdimg.exe is needed to build ISO images. Restore Resources\oscdimg.exe by reinstalling the module, or install the Windows ADK with the Deployment Tools feature from https://learn.microsoft.com/windows-hardware/get-started/adk-install (unattended: adksetup.exe /quiet /norestart /features OptionId.DeploymentTools; the Windows PE add-on is not needed), or pass -OscdimgPath with the path of oscdimg.exe or of the ADK folder.")
+    $exception = [System.IO.FileNotFoundException]::new("No usable oscdimg.exe was found in $searched.$reason oscdimg.exe is needed to build ISO images and comes from the Windows ADK. Install the Windows ADK with the Deployment Tools feature from https://learn.microsoft.com/windows-hardware/get-started/adk-install (unattended: adksetup.exe /quiet /norestart /features OptionId.DeploymentTools; the Windows PE add-on is not needed), or pass -OscdimgPath with the path of oscdimg.exe or of the ADK folder.")
     throw [System.Management.Automation.ErrorRecord]::new($exception, 'OscdimgNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Path)
 }
 

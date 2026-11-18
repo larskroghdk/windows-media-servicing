@@ -7,7 +7,9 @@ function Save-WindowsISOUpdate {
     .DESCRIPTION
         Downloads every package file of the plan, verifies the hash published in the update metadata and the Microsoft
         Authenticode signature, and records the packages in the cache index (updates.json). Valid cached files are not
-        downloaded again. The cache can be copied to a disconnected host and used with -RepositoryPath.
+        downloaded again. The cache can be copied to a disconnected host and used with -RepositoryPath. Requires
+        elevation: the cache is restricted to SYSTEM and Administrators and locked against concurrent runs, because its
+        packages go into serviced media.
 
     .PARAMETER Plan
         Update plan returned by Get-WindowsISOUpdates.
@@ -44,8 +46,16 @@ function Save-WindowsISOUpdate {
 
     process {
         if (-not $PSCmdlet.ShouldProcess($CachePath, "Download $(@($Plan.Updates).Count) updates")) { return }
+        Assert-Administrator
         $cache = Resolve-DirectoryPath -Path $CachePath -Create
-        $saved = @(Save-UpdatePackage -Update $Plan.Updates -OperatingSystem $Plan.OperatingSystem -Architecture $Plan.Architecture -CachePath $cache)
+        Protect-ServicingDirectory -Path $cache -Check All -Confirm:$false
+        $cacheLock = Lock-Directory -Directory $cache
+        try {
+            $saved = @(Save-UpdatePackage -Update $Plan.Updates -OperatingSystem $Plan.OperatingSystem -Architecture $Plan.Architecture -CachePath $cache)
+        }
+        finally {
+            Unlock-Directory -Lock $cacheLock
+        }
         $result = $Plan.PSObject.Copy()
         $result.Updates = $saved
         $result

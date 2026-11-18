@@ -111,8 +111,8 @@ Describe 'Copy-ModulePackageContent' {
     BeforeAll {
         $script:source = Join-Path $TestDrive 'source\Sample'
         $files = @(
-            'Sample.psd1', 'Sample.psm1', 'Public\Get-Sample.ps1', 'Private\Helper.ps1', 'Data\Data.psd1', 'Resources\oscdimg.exe'
-            'Public\Get-Sample.ps1.bak', 'Private\Nested\Deep.ps1', 'Resources\other.exe', 'tests\Sample.Tests.ps1', 'debug.log', '.vscode\settings.json', 'secrets.json'
+            'Sample.psd1', 'Sample.psm1', 'Public\Get-Sample.ps1', 'Private\Helper.ps1', 'Data\Data.psd1'
+            'Public\Get-Sample.ps1.bak', 'Private\Nested\Deep.ps1', 'Resources\oscdimg.exe', 'tests\Sample.Tests.ps1', 'debug.log', '.vscode\settings.json', 'secrets.json'
         )
         foreach ($file in $files) {
             $path = Join-Path $script:source $file
@@ -123,8 +123,8 @@ Describe 'Copy-ModulePackageContent' {
         $script:copied = @(Copy-ModulePackageContent -SourcePath $script:source -DestinationPath $script:destination -ModuleName 'Sample' -WarningVariable script:packageWarnings -WarningAction SilentlyContinue)
     }
     It 'copies only the runtime files and returns their package paths' {
-        $script:copied | Sort-Object | Should -Be @('Data/Data.psd1', 'Private/Helper.ps1', 'Public/Get-Sample.ps1', 'Resources/oscdimg.exe', 'Sample.psd1', 'Sample.psm1')
-        @(Get-ChildItem -LiteralPath $script:destination -Recurse -File).Count | Should -Be 6
+        $script:copied | Sort-Object | Should -Be @('Data/Data.psd1', 'Private/Helper.ps1', 'Public/Get-Sample.ps1', 'Sample.psd1', 'Sample.psm1')
+        @(Get-ChildItem -LiteralPath $script:destination -Recurse -File).Count | Should -Be 5
     }
     It 'warns about every file it leaves out' {
         $script:packageWarnings.Count | Should -Be 7
@@ -199,8 +199,8 @@ Describe 'Package build and publish with a local repository' {
         $content.Version | Should -Be $script:manifest.ModuleVersion
         $content.Dependencies | Should -BeNullOrEmpty
         $content.Files | Should -Contain 'WindowsIsoServicing.psd1'
-        $content.Files | Should -Contain 'Resources/oscdimg.exe'
-        $content.Files | Where-Object { $_ -notmatch '^(WindowsIsoServicing\.ps[dm]1|(Public|Private)/[^/]+\.ps1|Data/[^/]+\.psd1|Resources/oscdimg\.exe)$' } | Should -BeNullOrEmpty
+        $content.Files | Where-Object { $_ -like '*.exe' } | Should -BeNullOrEmpty -Because 'oscdimg.exe comes from the Windows ADK, not from the package'
+        $content.Files | Where-Object { $_ -notmatch '^(WindowsIsoServicing\.ps[dm]1|(Public|Private)/[^/]+\.ps1|Data/[^/]+\.psd1)$' } | Should -BeNullOrEmpty
         $expectedPublic = @($script:manifest.FunctionsToExport | ForEach-Object { "Public/$_.ps1" })
         @($content.Files | Where-Object { $_ -like 'Public/*' }) | Sort-Object | Should -Be ($expectedPublic | Sort-Object)
     }
@@ -209,7 +209,6 @@ Describe 'Package build and publish with a local repository' {
         $passedChecks | Should -Contain 'InstalledVersion'
         $passedChecks | Should -Contain 'InstalledLocation'
         $passedChecks | Should -Contain 'ExportedFunctions'
-        $passedChecks | Should -Contain 'Signature Resources/oscdimg.exe'
         $passedChecks | Should -Contain 'UnchangedDuringValidation'
     }
     It 'records the PowerShell and PSResourceGet versions that built the package' {

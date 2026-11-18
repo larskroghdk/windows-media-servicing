@@ -61,6 +61,7 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Collect manifests and summary
+        id: report
         if: always()
         run: |
           $configuration = Get-Content -LiteralPath $env:ISO_SERVICING_CONFIG -Raw | ConvertFrom-Json
@@ -72,13 +73,13 @@ jobs:
           Get-ChildItem -LiteralPath (Join-Path $configuration.outputPath 'logs') -Directory -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 5 |
             Copy-Item -Destination (Join-Path $collect 'logs') -Recurse -Force
-          "REPORT_PATH=$collect" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "path=$collect" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Upload servicing report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: servicing-report-${{ github.run_number }}
-          path: ${{ env.REPORT_PATH }}
+          path: ${{ steps.report.outputs.path }}
           retention-days: 90
           if-no-files-found: warn

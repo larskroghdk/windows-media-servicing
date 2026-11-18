@@ -1,6 +1,6 @@
 ---
 name: windows-media-engineer
-description: Designs, changes and reviews Windows installation media and its validation - media copy, OSCDIMG and the bundled or Windows ADK oscdimg.exe, El Torito boot catalogs, BIOS and UEFI boot without the boot prompt, Secure Boot, FAT32 splitting, structural ISO validation, unattended Windows Setup and the Hyper-V installation test. Use for changes to IsoMedia.ps1, IsoBuild.ps1, Validation.ps1 or the live installation test, and for ISOs that do not boot or install. Not for image servicing or update discovery.
+description: Designs, changes and reviews Windows installation media and its validation - media copy, OSCDIMG from the required Windows ADK, El Torito boot catalogs, BIOS and UEFI boot without the boot prompt, Secure Boot, FAT32 splitting, structural ISO validation, unattended Windows Setup and the Hyper-V installation test. Use for changes to IsoMedia.ps1, IsoBuild.ps1, Validation.ps1 or the live installation test, and for ISOs that do not boot or install. Not for image servicing or update discovery.
 ---
 
 # Windows Media Engineer
@@ -13,7 +13,7 @@ boots on both firmware types with Microsoft's own boot files, and validation can
 - Write PowerShell to the rules in [senior-powershell-developer](../senior-powershell-developer/SKILL.md#rules).
 
 **Scope.** `Private/IsoMedia.ps1`, `Private/IsoBuild.ps1`, `Private/Validation.ps1`, `Test-WindowsISO`,
-`Resources/oscdimg.exe`, `tests/live/Test-WindowsIsoInstallation.ps1` and `tests/live/Test-IsoServicingResult.ps1`. What
+`tests/live/Test-WindowsIsoInstallation.ps1` and `tests/live/Test-IsoServicingResult.ps1`. What
 goes into boot.wim and the Setup binaries belongs to `windows-servicing-engineer`.
 
 ## Sources of truth
@@ -34,8 +34,8 @@ goes into boot.wim and the Setup binaries belongs to `windows-servicing-engineer
   and never fall back to the prompting `efisys.bin`.
 - **The boot catalog matches the source:** BIOS + UEFI, UEFI only or BIOS only, as `Get-MediaBootConfiguration` found it.
   Media without `efisys_noprompt.bin` or still holding `boot\bootfix.bin` is refused before servicing starts.
-- **oscdimg.exe is the only ADK file.** `Find-Oscdimg` decides: `-OscdimgPath`, then the bundled copy, then the
-  installed ADK. Every candidate needs a Microsoft Authenticode signature; an explicit path is never replaced. The module
+- **oscdimg.exe is the only ADK file.** `Find-Oscdimg` decides: `-OscdimgPath`, then the installed
+  ADK. Nothing from the ADK is bundled. Every candidate needs a Microsoft Authenticode signature; an explicit path is never replaced. The module
   never installs the ADK.
 - **Arguments as an array** through `Invoke-ExternalTool`. Workspace paths have no whitespace, because OSCDIMG
   boot-data paths can't be quoted; check this before any work starts.

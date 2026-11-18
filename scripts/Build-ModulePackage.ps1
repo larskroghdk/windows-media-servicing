@@ -6,7 +6,7 @@
     Builds the module into a validated NuGet package (.nupkg) for the PowerShell Gallery.
 
 .DESCRIPTION
-    Finds the module under src (the folder that holds a manifest of the same name), validates the manifest with Test-ModuleManifest and the PowerShell Gallery rules, and takes the version from ModuleVersion and PrivateData.PSData.Prerelease. The version is never changed: with -ReleaseTag, the tag must be 'v<version>', and with -ReleaseIsPrerelease the release's prerelease flag must match the manifest, otherwise the build stops. Only runtime files are staged: the manifest, the root module, Public and Private scripts, Data files and Resources\oscdimg.exe, whose Microsoft signature is checked. Anything else in the module folder is left out with a warning. Compress-PSResource builds the package in a temporary folder. The package is then checked: the nuspec id, version and dependencies must match the manifest, and the package must hold exactly the staged files. It is installed with Save-PSResource from a temporary local repository, which is registered for the check and unregistered afterwards, and imported in a separate PowerShell process whose PSModulePath holds only the installation folder and the system module folders, so user modules and the source tree cannot satisfy the import. The imported version and exported functions must match the manifest. The package is packed once; its SHA-256 is taken right after packing and must be unchanged after validation and in the copy written to OutputPath, so the reported hash belongs to the file that was validated. Only when every check passes are the package and its build report (<package>.json with name, version, SHA-256, files, tool versions and checks) written to OutputPath, replacing an earlier local build of the same version. Publish-ModulePackage.ps1 publishes only packages with a passing report. No network access is needed.
+    Finds the module under src (the folder that holds a manifest of the same name), validates the manifest with Test-ModuleManifest and the PowerShell Gallery rules, and takes the version from ModuleVersion and PrivateData.PSData.Prerelease. The version is never changed: with -ReleaseTag, the tag must be 'v<version>', and with -ReleaseIsPrerelease the release's prerelease flag must match the manifest, otherwise the build stops. Only runtime files are staged: the manifest, the root module, Public and Private scripts and Data files. No executables are packaged: oscdimg.exe comes from the Windows ADK on the servicing host. Anything else in the module folder is left out with a warning. Compress-PSResource builds the package in a temporary folder. The package is then checked: the nuspec id, version and dependencies must match the manifest, and the package must hold exactly the staged files. It is installed with Save-PSResource from a temporary local repository, which is registered for the check and unregistered afterwards, and imported in a separate PowerShell process whose PSModulePath holds only the installation folder and the system module folders, so user modules and the source tree cannot satisfy the import. The imported version and exported functions must match the manifest. The package is packed once; its SHA-256 is taken right after packing and must be unchanged after validation and in the copy written to OutputPath, so the reported hash belongs to the file that was validated. Only when every check passes are the package and its build report (<package>.json with name, version, SHA-256, files, tool versions and checks) written to OutputPath, replacing an earlier local build of the same version. Publish-ModulePackage.ps1 publishes only packages with a passing report. No network access is needed.
 
 .PARAMETER OutputPath
     Folder for the package and its build report. Defaults to output\package in the repository, which Git ignores.
@@ -180,7 +180,7 @@ function Copy-ModulePackageContent {
         Copies the runtime files of the module into a staging folder.
 
     .DESCRIPTION
-        The package must contain what the module loads at run time and nothing else, so files are selected by an allow list rather than by excluding known development files: <ModuleName>.psd1 and <ModuleName>.psm1 at the root, *.ps1 directly in Public and Private, *.psd1 directly in Data, and Resources\oscdimg.exe. Hidden files are included in the scan so they are reported too. Every other file is left out with a warning that names it. Returns the relative paths of the copied files with forward slashes, as they appear in the package.
+        The package must contain what the module loads at run time and nothing else, so files are selected by an allow list rather than by excluding known development files: <ModuleName>.psd1 and <ModuleName>.psm1 at the root, *.ps1 directly in Public and Private, and *.psd1 directly in Data. Hidden files are included in the scan so they are reported too. Every other file is left out with a warning that names it. Returns the relative paths of the copied files with forward slashes, as they appear in the package.
 
     .PARAMETER SourcePath
         Module folder in the repository.
@@ -211,7 +211,7 @@ function Copy-ModulePackageContent {
         [Parameter(Mandatory)]
         [string]$ModuleName
     )
-    $runtimeFile = '^({0}\.psd1|{0}\.psm1|Public/[^/]+\.ps1|Private/[^/]+\.ps1|Data/[^/]+\.psd1|Resources/oscdimg\.exe)$' -f [regex]::Escape($ModuleName)
+    $runtimeFile = '^({0}\.psd1|{0}\.psm1|Public/[^/]+\.ps1|Private/[^/]+\.ps1|Data/[^/]+\.psd1)$' -f [regex]::Escape($ModuleName)
     $sourceRoot = (Resolve-Path -LiteralPath $SourcePath -ErrorAction Stop).ProviderPath
     foreach ($file in Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Force) {
         $relativePath = [System.IO.Path]::GetRelativePath($sourceRoot, $file.FullName) -replace '\\', '/'
@@ -387,10 +387,6 @@ if ($MyInvocation.InvocationName -ne '.') {
     try {
         $null = New-Item -Path $stagingPath, $packageFolder, $installPath -ItemType Directory -Force
         $files = @(Copy-ModulePackageContent -SourcePath $modulePath -DestinationPath $stagingPath -ModuleName $moduleName)
-        foreach ($binary in $files | Where-Object { $_ -like '*.exe' }) {
-            $signed = & $module { Test-MicrosoftSignature -Path $args[0] } (Join-Path $stagingPath $binary)
-            $checks.Add([pscustomobject]@{ Name = "Signature $binary"; Passed = $signed; Detail = $signed ? 'Valid Microsoft Corporation Authenticode signature.' : 'Not signed by Microsoft Corporation, or the signature is invalid. Restore the Microsoft-signed file.' })
-        }
         $built = Compress-PSResource -Path $stagingPath -DestinationPath $packageFolder -PassThru -ErrorAction Stop
         $sha256 = & $module { Get-FileSha256 -Path $args[0] } $built.FullName
         $content = Get-PackageContent -Path $built.FullName

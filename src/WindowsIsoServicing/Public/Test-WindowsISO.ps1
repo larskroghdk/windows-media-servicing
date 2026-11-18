@@ -44,7 +44,7 @@ function Test-WindowsISO {
 
     .PARAMETER OscdimgPath
         Path to oscdimg.exe, or to a folder that contains it or the Windows ADK, used to build the boot test answer file
-        media. Defaults to the copy in the module's Resources folder, then to the installed Windows ADK Deployment Tools.
+        media. Defaults to the installed Windows ADK Deployment Tools.
 
     .EXAMPLE
         Test-WindowsISO -Path 'D:\ISO\Updated\Windows_Server_2025_x64_26100_2026-11.iso'
@@ -95,6 +95,7 @@ function Test-WindowsISO {
         if (-not $ManifestPath -and (Test-Path -LiteralPath "$isoPath.json" -PathType Leaf)) { $ManifestPath = "$isoPath.json" }
         $manifest = if ($ManifestPath) { Read-ServicingManifest -Path (Resolve-TrustedFilePath -Path $ManifestPath -AllowedExtension '.json') }
         $workspace = Resolve-DirectoryPath -Path $WorkspacePath -Create
+        Protect-ServicingDirectory -Path $workspace -Confirm:$false
         $runPath = Join-Path $workspace "validate-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
         $null = New-Item -Path $runPath -ItemType Directory -Force
         try {
