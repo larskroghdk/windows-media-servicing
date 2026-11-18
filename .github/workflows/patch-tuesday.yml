@@ -1,0 +1,84 @@
+name: Patch Tuesday media servicing
+
+# Runs daily from the 9th to the 28th of each month. The pipeline script opens the servicing window on
+# Patch Tuesday (second Tuesday) plus patchTuesdayDelayDays and skips media whose update set is unchanged since the
+# latest published ISO, so repeated runs within a month are cheap and idempotent.
+
+on:
+  schedule:
+    - cron: "0 6 9-28 * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ignore the Patch Tuesday gate and the published baseline; rebuild all media"
+        type: boolean
+        default: false
+      delay_days:
+        description: "Days after Patch Tuesday before servicing starts (empty = configuration value)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-iso-servicing
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  service:
+    name: Service installation media
+    runs-on: [self-hosted, windows, iso-servicing]
+    timeout-minutes: 720
+    env:
+      ISO_SERVICING_CONFIG: ${{ vars.ISO_SERVICING_CONFIG }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check runner prerequisites
+        run: |
+          $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+          if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'The runner must run elevated.' }
+          if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw "PowerShell 7.4 or later is required; found $($PSVersionTable.PSVersion)." }
+          if (-not $env:ISO_SERVICING_CONFIG -or -not (Test-Path -LiteralPath $env:ISO_SERVICING_CONFIG)) {
+            throw 'Set the repository variable ISO_SERVICING_CONFIG to the path of the servicing configuration on the runner.'
+          }
+
+      - name: Service media
+        env:
+          FORCE: ${{ inputs.force }}
+          DELAY_DAYS: ${{ inputs.delay_days }}
+        run: |
+          $arguments = @{ ConfigurationPath = $env:ISO_SERVICING_CONFIG }
+          if ($env:FORCE -eq 'true') { $arguments.Force = $true }
+          if ($env:DELAY_DAYS -match '^\d+$') { $arguments.DelayDays = [int]$env:DELAY_DAYS }
+          & ./scripts/Invoke-IsoServicingPipeline.ps1 @arguments
+          exit $LASTEXITCODE
+
+      - name: Collect manifests and summary
+        if: always()
+        run: |
+          $configuration = Get-Content -LiteralPath $env:ISO_SERVICING_CONFIG -Raw | ConvertFrom-Json
+          $collect = Join-Path $env:RUNNER_TEMP 'servicing-report'
+          $null = New-Item -Path $collect -ItemType Directory -Force
+          Get-ChildItem -LiteralPath $configuration.outputPath -File -Include '*.iso.json', '*.iso.sha256', 'servicing-summary.json' -Recurse -Depth 0 -ErrorAction SilentlyContinue |
+            Copy-Item -Destination $collect
+          $null = New-Item -Path (Join-Path $collect 'logs') -ItemType Directory -Force
+          Get-ChildItem -LiteralPath (Join-Path $configuration.outputPath 'logs') -Directory -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 5 |
+            Copy-Item -Destination (Join-Path $collect 'logs') -Recurse -Force
+          "REPORT_PATH=$collect" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Upload servicing report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: servicing-report-${{ github.run_number }}
+          path: ${{ env.REPORT_PATH }}
+          retention-days: 90
+          if-no-files-found: warn

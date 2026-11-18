@@ -1,0 +1,587 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" html lang="en">
+<head id="Head1"><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=7" /><link rel="stylesheet" type="text/css" href="Style/catalog.css" /><title>
+	Microsoft Update Catalog
+</title><script type="text/javascript">
+	function supressError(message, url, line)
+	{
+	  var re = /^function\s*([^(]*)\s*\(([^)]*)\)/;
+	  var matches = null;
+	  if (arguments.caller != null) {
+	    matches = re.exec(arguments.caller.callee);
+	  }
+	  var argArray = new Array();
+	  var fName = 'unknown';
+	  if(matches)
+	  {
+	    if(matches[1] && matches[1].toString().length > 0)
+	       fName = matches[1].toString();
+	    if(matches[2] && matches[2].toString().length > 0)
+	    {
+	       var cleanMatches = new String(matches[2]).replace(/\s*/g,'');
+	       argArray = cleanMatches.split(',');
+	    }
+	  }
+	  var args = (argArray.length>0)?'':'none';
+	  for(var i=0; i<argArray.length; i++)
+	  {
+	    args += ((args=='')?'':', ') + argArray[i] + '(' + typeof(arguments.caller[i]) + '):';
+	    args += arguments.caller[i];
+	  }
+	  if(typeof(logger) != typeof(undefined) && logger != null)
+	    logger.log(logger.logLevelFatal, 'JavaScript Error: MESSAGE='+ message + '. URL=' + url + '. LINE='+ line + '. FUNCTION_NAME=' + fName +'. ARGUMENTS=' + args);
+	  else if(typeof(console) != typeof(undefined) && console != null)
+	    console.log('JavaScript Error: MESSAGE='+ message + '. URL=' + url + '. LINE='+ line + '. FUNCTION_NAME=' + fName +'. ARGUMENTS=' + args);
+	  var location = window.location.href.toLowerCase();
+	  if(location.indexOf('ErrorInline.aspx'.toLowerCase()) == -1)
+	    window.location.href = 'ErrorInline.aspx'  + '?id=' + Microsoft.UpdateServices.Catalog.Constants.ErrorScriptError;
+	  return true;
+	}
+	window.onerror = supressError;
+</script></head>
+<body class="mainBody" id="ltr">
+    <form method="post" action="./ScopedViewInline.aspx?updateid=1abba66b-03c6-467e-9819-96844606cb15" id="scopedViewInline">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+
+
+<script src="/ScriptResource.axd?d=uHIkleVeDJf4xS50Krz-yEcwErtvi3tc2AUDRBA_iOONw9rUBLvSFMzTOg6xd4lx255pC8eWeJvUQur7jv5o6SSFFJ8m_4bNp_ats1mYtdUIzRzTeWQ5RnRJYZGo72zf60rV_1eVpJnjQa_UAKf3aEkyryd9hzI95mP2OEVy_1s1&amp;t=ffffffffbec1863d" type="text/javascript"></script>
+<script src="SiteConstants.aspx?7" type="text/javascript"></script>
+<script src="Script/CommonTypes.js?7" type="text/javascript"></script>
+<script src="Script/DownloadBasket.js?7" type="text/javascript"></script>
+<script src="Script/MasterComponents.js?7" type="text/javascript"></script>
+<script src="Script/ScopedView.js?7" type="text/javascript"></script>
+<script src="Script/HelperMethods.js?7" type="text/javascript"></script>
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="015E8938" />
+        <script type="text/javascript" language="javascript">
+        function pageLoad()
+        {           
+            pageLoadHelper("true");
+        }
+        </script>
+
+        <div class="inlinePadding">
+            <div id="scopedViewHeaderTitleBox" class="dialogHeader" role="banner">
+                <span id="scopedViewHeaderTitleResource">Update Details</span>
+            </div>
+            
+ <div id="contentSection" role="contentinfo">
+       
+    
+    <script type="text/javascript" language="javascript">
+        var scopedViewComponent;
+        var binarySize = new Array();
+
+        ///<summary>
+        ///     This function is called automatically by ASP.NET AJAX framework when the page finishes loading
+        ///</summary>
+        function pageLoadHelper(details)
+        {           
+           var downloadButton = $get('downloadButton'); 
+           var uId = '1abba66b-03c6-467e-9819-96844606cb15';
+           var addToBasketLabel = 'Add to Basket';
+           var removeFromBasketLabel = 'Remove from Basket';
+           var sizeContainer = $get('ScopedViewHandler$size'.replace(/\$/g, '_'));
+           var updateBasketLabel = 'Update Basket';           
+           if(details != "true")
+           {
+                // Get the MasterPageContext object
+                var masterPageContext = createMasterPageComponents(true);
+                if(masterPageContext == null)
+                {
+                    return;
+                }
+                
+                if(typeof(downloadButton) != typeof(Microsoft.UpdateServices.Catalog.Constants.UndefinedValue)
+                    && downloadButton != null)
+                {
+                    downloadButton.value = 'Download Now';
+                    $addHandler(downloadButton, "click", function () { 
+                        //pass in the updateid, size and languages info as language info is needed to know what binaries to downlaod and 
+                        //language info and size info is needed to add the update back to basket if the update is failed or cancled in download process
+                        var updateIDLang = uId 
+                        //if all the check box is present then the language selection is present
+                        var allCheckbox = $get('allLan')    
+                        if(typeof(allCheckbox) != typeof(Microsoft.UpdateServices.Catalog.Constants.UndefinedValue) && allCheckbox != null)
+                        {
+                            updateIDLang += Microsoft.UpdateServices.Catalog.Constants.UpdateInfoSeparator+  scopedViewComponent.getTotalSize() +  scopedViewComponent.getLangSelected(); 
+                        }
+                        //serialize the update selection so on the server this can be de-serialized uing Jason
+                        var serializedUpdateInfo = Sys.Serialization.JavaScriptSerializer.serialize([new Microsoft.UpdateServices.Catalog.Update(updateIDLang)]);
+                        masterPageContext.get_basketForm().updateIDs.value = serializedUpdateInfo;
+                            
+                        var qs = new Microsoft.UpdateServices.Catalog.QueryString(window.location.search);
+                        var downloadDialog = window.open(Microsoft.UpdateServices.Catalog.Constants.PageDownloadDialog + qs.appendErrorsQS("?scopedview=true"),
+                                                Microsoft.UpdateServices.Catalog.Constants.EmptyString,
+                                                'height=460,width=640,status=no,toolbar=no,menubar=no,location=no,scrollbars=yes,resizable=1 ');
+                        if(downloadDialog == null)
+                        {
+                            popupInfo.style.display = "block";
+                        }
+                    });
+                    downloadButton.style.display = "inline";           
+                }
+           }
+           //get all the language elements and attach event to them and build an array to pass to js
+            var inputElments = languageBox.getElementsByTagName("input");
+            var languageCheckboxes = new Array();            
+            for(i=0; i<inputElments.length; i++ )
+            {
+                if(inputElments[i].type == "checkbox" && inputElments[i].id != "allLan")
+                { 
+                    languageCheckboxes.push(inputElments[i]);              
+                    attachEventToCheckbox(inputElments[i]); 
+                }
+            }
+            //add event handler to all language checkbox  
+            var allCheckbox = $get('allLan')
+            if (typeof(allCheckbox) != typeof(Microsoft.UpdateServices.Catalog.Constants.UndefinedValue) && allCheckbox != null) {
+                $addHandler(allCheckbox, "click", function () { scopedViewComponent.allLanguageSelected(); }); 
+            }
+
+            scopedViewComponent = new Microsoft.UpdateServices.Catalog.UI.ScopedView(
+                                            $get('contentSection'), 
+                                            uId, 
+                                            addToBasketLabel, 
+                                            removeFromBasketLabel,
+                                            $get('overView'),
+                                            $get('overviewBox'),
+                                            $get('packageDetails'),
+                                            $get('packageBox'),
+                                            $get('installDetails'),
+                                            $get('installBox'),
+                                            $get('languageSelection'),
+                                            $get('languageBox'),
+                                            languageCheckboxes,
+                                            "",
+                                            sizeContainer,
+                                            updateBasketLabel,
+                                            allCheckbox,
+                                            downloadButton,
+                                            binarySize //array of binary size per locale
+                                            );       
+
+            $addHandler($get('overView'), 'keydown', TextBox_OnKeyDownOverview);
+            $addHandler($get('languageSelection'), 'keydown', TextBox_OnKeyDownLanguage);
+            $addHandler($get('packageDetails'), 'keydown', TextBox_OnKeyDownPackage);
+            $addHandler($get('installDetails'), 'keydown', TextBox_OnKeyDownDetails);
+
+            $get('overView').setAttribute("aria-selected", "true");
+            $get('languageSelection').setAttribute("aria-selected", "false");
+            $get('installDetails').setAttribute("aria-selected", "false");
+            $get('packageDetails').setAttribute("aria-selected", "false");
+
+            $addHandler(overView, "click", function () { scopedViewComponent.switchTab(1); });
+            $addHandler(packageDetails, "click", function () { scopedViewComponent.switchTab(2); });
+            $addHandler(installDetails, "click", function () { scopedViewComponent.switchTab(3); });
+            $addHandler(languageSelection, "click", function () { scopedViewComponent.switchTab(4); });
+            $addHandler(window, "focus", function () { 
+                if (typeof(scopedViewComponent) != typeof(Microsoft.UpdateServices.Catalog.Constants.UndefinedValue)) {
+                    scopedViewComponent.updateLabels("true");
+                }
+            });
+        }
+        
+        function attachEventToCheckbox(languageCheckbox) {
+            $addHandler(languageCheckbox, "click", function () { scopedViewComponent.manageBasketButton(); });
+        }
+
+
+        function TextBox_OnKeyDownOverview(e)
+        {
+            if (e.keyCode == 39)
+            {
+                $get('languageSelection').focus();
+            }
+        }
+
+        function TextBox_OnKeyDownLanguage(e)
+        {
+            if (e.keyCode == 39)
+            {
+                $get('packageDetails').focus();
+            }
+
+            if (e.keyCode == 37)
+            {
+                $get('overView').focus();
+
+            }
+        }
+
+        function TextBox_OnKeyDownPackage(e)
+        {
+            if (e.keyCode == 39)
+            {
+                $get('installDetails').focus();
+            }
+
+            if (e.keyCode == 37)
+            {
+                $get('languageSelection').focus();
+            }
+        }
+
+        function TextBox_OnKeyDownDetails(e)
+        {
+            if (e.keyCode == 37)
+            {
+                $get('packageDetails').focus();
+            }
+        }
+
+        function copyUpdateidToClipboard() {
+            copyTextToClipboard("1abba66b-03c6-467e-9819-96844606cb15");
+        }
+
+        
+
+    </script>
+    <div class="textBottomSpacer labelTitle" id="titleDiv">
+        <span id="ScopedViewHandler_titleText">2026-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5126646) (26100.33650)</span>
+    </div>
+    <div id="dateDiv" class="textBottomSpacer">
+        <span id="ScopedViewHandler_labelLastModified_Separator" class="labelTitle">Last Modified:</span>
+        <span id="ScopedViewHandler_date">10/13/2026</span>
+    </div>
+    <div id="sizeDiv" class="textBottomSpacer">
+        <span class="labelTitle">Size:</span>
+        <span id="ScopedViewHandler_size">2551.6 MB</span>
+    </div>
+    <div id="updateIdDiv" class="textBottomSpacer">
+        <span class="labelTitle">UpdateID:</span>
+        <span id="ScopedViewHandler_UpdateID">1abba66b-03c6-467e-9819-96844606cb15</span>
+        <input id="downloadSettingsUpdateidButton" class="flatBlueButtonDownloadFittext focus-only" type="button" value="Copy" onclick="copyUpdateidToClipboard()">
+        <div id="liveRegion" aria-live="polite" aria-atomic="true" style="position: absolute; left: -9999px;"></div>
+    </div>
+    <div id="buttonsDiv">
+        <input id="downloadButton" class="flatBlueButton buttonPadding" type="button" style="display: none;" />
+    </div>
+</div>
+<div id="popupInfo" class="poupInfoDiv">
+    <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td valign="top">
+                <img src="Images/decor_BigInformation.gif" />
+            </td>
+            <td class="poupInfoText">
+                <span id="ScopedViewHandler_textPopupBlocked">If you have a pop-up blocker enabled, the Download window might not open. To open the Download window, configure your pop-blocker to allow pop-ups for this Web site.</span>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="tabSection" role="tablist">
+    <div class="textLeftPadding textTopPadding">
+        <span id="ScopedViewHandler_labelDetails_Separator">Details:</span>
+    </div>
+    <div id="tabContainer">
+        <a href="#Overview" id="overView" aria-selected="false" role="tab" class="tab tabActive" tabindex="1" ><span id="ScopedViewHandler_labelOverview">Overview</span></a>
+        <a href="#LanguageSelection"  id="languageSelection"  aria-selected="false" role="tab" class="tab tabInactive" tabindex="11"><span id="ScopedViewHandler_labelLangSelection">Language Selection</span></a>
+        <a href="#PackageDetails"  id="packageDetails"  aria-selected="false" role="tab" class="tab tabInactive" tabindex="21"><span id="ScopedViewHandler_labelPkgDetails">Package Details</span></a>
+        <a href="#InstallDetails"  id="installDetails"   aria-selected="false" role="tab" class="tab tabInactive" tabindex="31"><span id="ScopedViewHandler_labelInstallDetails">Install Resources</span></a>        
+    </div>
+</div>
+<div id="tabBody" role="main">
+    <div id="overviewBox">
+        <div id="overviewContentBody" class="tabBodyContentBox">
+            <table cellpadding="0" cellspacing="0" border="0" width="95%">
+                <tr>
+                    <td id="overviewLeftBox">
+                        <div id="descDiv" class="textDoubleSpacer">
+                            <span id="ScopedViewHandler_labelDescription_Separator" class="labelTitle">Description:</span>
+                            <span id="ScopedViewHandler_desc">Install this update to resolve issues in Microsoft server operating system, version 24H2. For a complete listing of the issues that are included in this update, see the associated Microsoft Knowledge Base article for more information. After you install this item, you may have to restart your computer.</span>
+                        </div>
+                        
+                        <div id="archDiv">
+                            <span id="ScopedViewHandler_labelArchitecture_Separator" class="labelTitle">Architecture:</span>
+                            n/a
+                        </div>
+                        <div id="classificationDiv">
+                            <span id="ScopedViewHandler_labelClassification_Separator" class="labelTitle">Classification:</span>
+                            
+                                    Security Updates
+                                
+                        </div>                        
+                        <div id="productsDiv">
+                            <span id="ScopedViewHandler_labelSupportedProducts_Separator" class="labelTitle">Supported products:</span>
+                            
+                                    Microsoft Server Operating System-24H2
+                                
+                        </div>
+                        <div id="languagesDiv">
+                            <span id="ScopedViewHandler_labelSupportedLanguages_Separator" class="labelTitle">Supported languages:</span>
+                            
+                                    all
+                                
+                        </div>
+                    </td>
+                    <td id="overviewRightBox">
+                        <div id="ScopedViewHandler_SoftwareInfo">
+                            <div id="securityBullitenDiv">
+                                <span id="ScopedViewHandler_labelSecurityBulliten_Separator" class="labelTitle">MSRC Number:</span>
+                                
+                                        n/a
+                                    
+                            </div>
+                            <div id="msrcSeverityDiv">
+                                <span id="ScopedViewHandler_labelMSRCSeverity_Separator" class="labelTitle">MSRC severity:</span>
+                                <span id="ScopedViewHandler_msrcSeverity">Critical</span>
+                            </div>
+                            <div id="kbDiv" class="textDoubleSpacer">
+                                <span id="ScopedViewHandler_labelKBArticle_Separator" class="labelTitle">KB article numbers:</span>
+                                
+                                        5126646
+                                    
+                            </div>
+                        </div>
+                        
+                        <div id="moreInfoDiv" class="textDoubleSpacer">
+                            <span id="ScopedViewHandler_labelMoreInfo_Separator" class="labelTitle">More information:</span>
+                            
+                                    <div>
+                                        <a target="catalogNew" tabindex="2" href="https://support.microsoft.com/help/5126646" class ="contentTextItemSpacerNoBreakLink">
+                                            https://support.microsoft.com/help/5126646
+                                        </a>
+                                    </div>
+                                
+                        </div>
+                        <div id="suportUrlDiv" class="textDoubleSpacer">
+                            <span id="ScopedViewHandler_labelSupportUrl_Separator" class="labelTitle">Support Url:</span>
+                            
+                                    <div>
+                                        <a target="catalogNew" tabindex="3" href="https://support.microsoft.com/help/5126646" class = "contentTextItemSpacerNoBreakLink">
+                                            https://support.microsoft.com/help/5126646
+                                        </a>
+                                    </div>
+                                
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div id="packageBox" style="display: none">
+        <div id="ScopedViewHandler_softwarePackage">           
+            <div class="tabBodyContentBox tabBodyContentBox">
+                <span id="ScopedViewHandler_labelSupersedingUpdates_Separator" class="labelTitle">This update has been replaced by the following updates:</span>
+                    
+                <div id="supersededbyInfo">
+                    
+                            <div style="padding-bottom: 0.3em;">
+                                <a href='ScopedViewInline.aspx?updateid=4fa68173-6861-438a-abb3-a01d9da15038'>2026-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5134137) (26100.33674)</a>
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                <a href='ScopedViewInline.aspx?updateid=6b79cd24-897c-4d7f-af62-b2757c93c570'>2026-11 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5131080) (26100.33822)</a>
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                <a href='ScopedViewInline.aspx?updateid=8e961bf2-cf78-410f-b4c2-9ffec78af719'>2026-11 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5136489) (26100.33828)</a>
+                            </div>
+                        
+                </div>
+                <span id="ScopedViewHandler_labelSupersededUpdates_Separator" class="labelTitle">This update replaces the following updates:</span>
+                <div id="supersedesInfo">
+                    
+                            <div style="padding-bottom: 0.3em;">
+                                2024-09 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5043080)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2024-11 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5046617)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-01 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5050009)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2024-12 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5048667)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-02 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5051987)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2024-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5044284)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-04 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5055523)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-03 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5053598)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-06 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5060842)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-05 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5058411)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-07 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5064489)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-09 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5065426) (26100.6584)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-09 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5068221) (26100.6588)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-07 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5062553)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5066835) (26100.6899)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-08 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5063878) (26100.4946)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5070881) (26100.6905)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-10 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5070773) (26100.6901)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-11 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5068861) (26100.7171)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-12 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5072033) (26100.7462)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2025-11 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5072359) (26100.7178)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-01 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5078135) (26100.32236)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-01 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5077793) (26100.32234)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-02 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5075899) (26100.32370)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-01 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5073379) (26100.32230)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-03 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5078740) (26100.32522)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-04 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5082063) (26100.32690)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-06 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5094125) (26100.32995)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-04 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5091157) (26100.32698)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-07 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5099536) (26100.33158)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-05 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5087539) (26100.32860)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-09 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5122871) (26100.33438)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-08 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5120233) (26100.33296)
+                            </div>
+                        
+                            <div style="padding-bottom: 0.3em;">
+                                2026-09 Cumulative Update for Microsoft server operating system version 24H2 for x64-based Systems (KB5129235) (26100.33451)
+                            </div>
+                        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <div id="languageBox" style="display: none">
+        <div id="ScopedViewHandler_Div2">
+            <div id ="languageContentBody" class="tabBodyContentBox boxTitleContainer">
+                
+                <span id="ScopedViewHandler_OneLanguage" style="display:block;">There are no additional languages to select</span>
+            </div>
+        </div>
+    </div>
+    <div id="installBox" style="display: none">       
+        <div class="tabBodyContentBox" TABINDEX="1">
+            <div id="rebootBehaviorDiv">
+                <span id="ScopedViewHandler_labelRebooBehavior_Separator" class="labelTitle">Restart behavior:</span>
+                <span id="ScopedViewHandler_rebootBehavior">Can request restart</span>
+            </div>
+            <div id="userInputDiv">
+                <span id="ScopedViewHandler_labelRequiresInput_Separator" class="labelTitle">May request user input:</span>
+                <span id="ScopedViewHandler_userInput">No</span>
+            </div>
+            <div id="installationImpactDiv">
+                <span id="ScopedViewHandler_labelInstallationImpact_Separator" class="labelTitle">Must be installed exclusively:</span>
+                <span id="ScopedViewHandler_installationImpact"></span>
+            </div>
+            <div id="connectivityDiv">
+                <span id="ScopedViewHandler_labelInstallRequiresConnectivity_Separator" class="labelTitle">Requires network connectivity:</span>
+                <span id="ScopedViewHandler_connectivity">No</span>
+            </div>            
+            <div id="uninstallNotesDiv">                
+                <span id="ScopedViewHandler_labelUninstallNotes_Separator" class="labelTitle">Uninstall Notes:</span>
+                
+                        <div>
+                            n/a
+                        </div>
+                    
+            </div>
+             <div id="uninstallStepsDiv">                
+                <span id="ScopedViewHandler_labelUninstallSteps_Separator" class="labelTitle">Uninstall Steps:</span>
+                
+                        <div>
+                            n/a
+                        </div>
+                    
+            </div>
+        </div>
+    </div>
+</div>
+<span id="addToBasketButtonText" class="notVisible">
+    Add to Basket
+</span><span id="removeFromBasketButtonText" class="notVisible">
+    Remove from Basket
+ </span><span id="updateBasketButtonText" class="notVisible">
+    Update Basket
+</span>
+
+            <div class="inlineCloseButtonCenter textAlignCenter">
+                <a href="#Close" id="close" role="button" onclick="window.close()" class="flatBlueButtonClose flatBlueButtonGeneric" ><span id="labelOverview">Close</span></a>
+            </div>
+        </div>
+    </form>
+</body>
+</html>

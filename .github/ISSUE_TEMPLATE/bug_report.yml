@@ -1,0 +1,74 @@
+name: Bug report
+description: A servicing run, update discovery, validation or publishing failed or produced a wrong result.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Don't attach ISO files, update packages or anything that contains credentials, API keys or product keys.
+        Remove internal host names and share paths from logs if they must not be public.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Servicing (Update-WindowsISO)
+        - Update discovery (Microsoft Update Catalog, MSRC)
+        - Validation or Hyper-V boot test
+        - Publishing to the artifact store (Publish-WindowsISO)
+        - Patch Tuesday pipeline
+        - PowerShell Gallery packaging
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: module-version
+    attributes:
+      label: Module version
+      description: Output of `(Get-Module WindowsIsoServicing).Version`, or the commit you ran from.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: media
+    attributes:
+      label: Source media
+      description: Release, edition, build and architecture from `Get-WindowsISOInfo`, and the ISO file name.
+      placeholder: Windows Server 2025, ServerDatacenter, 26100.1742, x64, en-us
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Servicing host
+      description: Windows build, PowerShell version (`$PSVersionTable.PSVersion`) and DISM version (`dism /English /?`).
+      placeholder: Windows Server 2025 26100.4061, PowerShell 7.4.6, DISM 10.0.26100.1
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command or pipeline configuration you ran.
+      render: powershell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: The error message and error ID (for example UnsupportedMedia or CatalogFormatChanged).
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The relevant lines of `<runId>.log.jsonl`, the DISM log of the failing step, and the manifest or `*.failed.json` if one was written.
+      render: text

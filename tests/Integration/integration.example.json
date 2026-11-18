@@ -1,0 +1,49 @@
+{
+  "outputPath": "D:\\IsoServicingTest\\Output",
+  "workspacePath": "D:\\IsoServicingTest\\Workspace",
+  "cachePath": "D:\\IsoServicingTest\\Cache",
+  "cases": [
+    {
+      "name": "server-2016",
+      "sourceIso": "D:\\Iso\\Windows_Server_2016.iso",
+      "expectedReleaseKey": "WindowsServer2016",
+      "index": [2]
+    },
+    {
+      "name": "server-2019",
+      "sourceIso": "D:\\Iso\\Windows_Server_2019.iso",
+      "expectedReleaseKey": "WindowsServer2019",
+      "index": [2]
+    },
+    {
+      "name": "server-2022",
+      "sourceIso": "D:\\Iso\\Windows_Server_2022.iso",
+      "expectedReleaseKey": "WindowsServer2022",
+      "index": [2]
+    },
+    {
+      "name": "server-2025",
+      "sourceIso": "D:\\Iso\\Windows_Server_2025.iso",
+      "expectedReleaseKey": "WindowsServer2025",
+      "index": [2],
+      "bootTest": true
+    },
+    {
+      "name": "windows-10-22h2",
+      "sourceIso": "D:\\Iso\\Windows_10_22H2.iso",
+      "expectedReleaseKey": "Windows10Version22H2",
+      "esuEntitled": true
+    },
+    {
+      "name": "windows-11-24h2",
+      "sourceIso": "D:\\Iso\\Windows_11_24H2.iso",
+      "expectedReleaseKey": "Windows11Version24H2",
+      "bootTest": true
+    },
+    {
+      "name": "windows-11-25h2",
+      "sourceIso": "D:\\Iso\\Windows_11_25H2.iso",
+      "expectedReleaseKey": "Windows11Version25H2"
+    }
+  ]
+}

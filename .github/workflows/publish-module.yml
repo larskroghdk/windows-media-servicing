@@ -1,0 +1,158 @@
+name: Publish module
+
+# Builds, validates and publishes the WindowsIsoServicing module to the PowerShell Gallery.
+# Publishing a GitHub release publishes its tag. The tag must be v<ModuleVersion>[-<Prerelease>] from the manifest,
+# and the release's pre-release setting must match PrivateData.PSData.Prerelease.
+# A manual run validates and packages only. With "publish" set it must run on the tag of a published GitHub release
+# (Use workflow from: Tags), for example to retry a failed publish.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to the PowerShell Gallery after validation (only on the tag of a published release)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-module
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    name: Validate and package
+    runs-on: windows-latest
+    timeout-minutes: 30
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+      name: ${{ steps.package.outputs.name }}
+      version: ${{ steps.package.outputs.version }}
+      sha256: ${{ steps.package.outputs.sha256 }}
+      package-file: ${{ steps.package.outputs.package-file }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PUBLISH_INPUT: ${{ inputs.publish }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          IS_FORK: ${{ github.event.repository.fork }}
+        run: |
+          if ($PSVersionTable.PSVersion -lt [semver]'7.4.0') { throw "PowerShell 7.4 or later is required; the runner has $($PSVersionTable.PSVersion)." }
+          $publish = $env:EVENT_NAME -eq 'release' -or ($env:EVENT_NAME -eq 'workflow_dispatch' -and $env:PUBLISH_INPUT -eq 'true')
+          if ($publish -and $env:IS_FORK -eq 'true') { throw 'Publishing runs only in the original repository, not in a fork.' }
+          if ($publish -and $env:REF_TYPE -ne 'tag') { throw "Publishing needs the tag of a published GitHub release, but this run is on the $env:REF_TYPE '$env:REF_NAME'. Run the workflow from the release tag (Use workflow from: Tags), or publish a GitHub release." }
+          $tag = if ($env:REF_TYPE -eq 'tag') { $env:REF_NAME } else { '' }
+          $prerelease = ''
+          if ($tag) {
+            $tagCommit = gh api "repos/$env:GITHUB_REPOSITORY/commits/refs/tags/$tag" --jq '.sha'
+            if ($LASTEXITCODE -ne 0 -or -not $tagCommit) { throw "Could not resolve the tag '$tag' to a commit in $env:GITHUB_REPOSITORY." }
+            $checkedOut = git rev-parse HEAD
+            if ($tagCommit -ne $checkedOut -or $tagCommit -ne $env:GITHUB_SHA) { throw "The tag '$tag' points to $tagCommit, but the run checked out $checkedOut (GITHUB_SHA $env:GITHUB_SHA). The tag may have moved; create a new release instead of moving a tag." }
+            $releaseJson = gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName,isDraft,isPrerelease 2>$null
+            if ($LASTEXITCODE -eq 0) {
+              $release = $releaseJson | ConvertFrom-Json
+              if ($publish -and $release.isDraft) { throw "The GitHub release for '$tag' is still a draft. Publish the release; publishing it starts this workflow." }
+              $prerelease = ([bool]$release.isPrerelease).ToString().ToLowerInvariant()
+            }
+            elseif ($publish) { throw "There is no GitHub release for the tag '$tag'. Create and publish the release; a Gallery version is only published from a release." }
+          }
+          "Event $env:EVENT_NAME on $env:REF_TYPE '$env:REF_NAME'; publish: $publish; release tag: '$tag'; prerelease: '$prerelease'" | Write-Output
+          Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "publish=$($publish.ToString().ToLowerInvariant())", "tag=$tag", "prerelease=$prerelease"
+          exit 0
+
+      - name: Install pinned modules
+        run: |
+          $modulePath = Join-Path $env:RUNNER_TEMP 'modules'
+          ./scripts/Install-BuildDependency.ps1 -Path $modulePath | Format-Table -AutoSize | Out-String | Write-Output
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "PSModulePath=$modulePath$([System.IO.Path]::PathSeparator)$env:PSModulePath"
+
+      - name: Lint, typecheck and unit tests
+        run: ./scripts/Invoke-QualityGate.ps1 -Task All -TestResultPath TestResults.xml
+
+      - name: Build and validate package
+        id: package
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          $arguments = @{ OutputPath = Join-Path $env:RUNNER_TEMP 'package' }
+          if ($env:RELEASE_TAG) { $arguments.ReleaseTag = $env:RELEASE_TAG }
+          if ($env:RELEASE_PRERELEASE) { $arguments.ReleaseIsPrerelease = $env:RELEASE_PRERELEASE -eq 'true' }
+          $package = ./scripts/Build-ModulePackage.ps1 @arguments
+          Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "name=$($package.name)", "version=$($package.version)", "sha256=$($package.sha256)", "package-file=$($package.packageFile)"
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### Package $($package.name) $($package.version)", '', "- File: ``$($package.packageFile)`` ($($package.sizeBytes) bytes, $($package.files.Count) module files)", "- SHA-256: ``$($package.sha256)``", "- Built with PowerShell $($package.builtWith.powerShell) and PSResourceGet $($package.builtWith.psResourceGet)", "- Validation: $(@($package.validation.checks).Count) checks passed, including installation and import in a clean process"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publish-unit-test-results
+          path: TestResults.xml
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: module-package
+          path: ${{ runner.temp }}/package/
+          retention-days: 90
+          if-no-files-found: error
+
+  publish:
+    name: Publish to the PowerShell Gallery
+    needs: build
+    if: needs.build.outputs.publish == 'true' && github.ref_type == 'tag'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    environment:
+      name: psgallery
+      url: https://www.powershellgallery.com/packages/${{ needs.build.outputs.name }}/${{ needs.build.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned PSResourceGet
+        run: |
+          $modulePath = Join-Path $env:RUNNER_TEMP 'modules'
+          ./scripts/Install-BuildDependency.ps1 -Path $modulePath -Name 'Microsoft.PowerShell.PSResourceGet' | Format-Table -AutoSize | Out-String | Write-Output
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "PSModulePath=$modulePath$([System.IO.Path]::PathSeparator)$env:PSModulePath"
+
+      - name: Download validated package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: module-package
+          path: ${{ runner.temp }}/package
+
+      - name: Publish package
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+          PACKAGE_FILE: ${{ needs.build.outputs.package-file }}
+          EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
+        run: |
+          if (-not $env:PSGALLERY_API_KEY) { throw 'The secret PSGALLERY_API_KEY is not set. Add it to the psgallery environment under Settings > Environments > psgallery > Environment secrets.' }
+          if ($env:PACKAGE_FILE -notmatch '^[A-Za-z0-9.]+\.\d+\.\d+\.\d+(-[0-9A-Za-z]+)?\.nupkg$') { throw "The build job reported the package file '$env:PACKAGE_FILE', which is not a package file name. Nothing was published." }
+          $apiKey = ConvertTo-SecureString -String $env:PSGALLERY_API_KEY -AsPlainText -Force
+          $packagePath = Join-Path $env:RUNNER_TEMP "package/$env:PACKAGE_FILE"
+          $result = ./scripts/Publish-ModulePackage.ps1 -PackagePath $packagePath -ApiKey $apiKey -ExpectedSha256 $env:EXPECTED_SHA256 -Confirm:$false
+          "Published $($result.name) $($result.version) to $($result.repository): $($result.galleryUri)" | Write-Output
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### Published $($result.name) $($result.version)", '', "- Gallery: $($result.galleryUri)", "- SHA-256: ``$($result.sha256)`` (the validated build artifact)", "- Listed: $($result.listed)"

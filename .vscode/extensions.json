@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "ms-vscode.powershell",
+    "pspester.pester-test",
+    "github.vscode-github-actions",
+    "davidanson.vscode-markdownlint"
+  ]
+}

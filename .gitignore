@@ -1,0 +1,13 @@
+# Media and servicing artifacts never belong in Git.
+*.iso
+*.wim
+*.esd
+*.swm
+*.msu
+*.cab
+*.vhdx
+*.nupkg
+TestResults.xml
+/output/
+/workspace/
+/cache/

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting guide
+    url: https://github.com/larskroghdk/windows-media-servicing/blob/main/docs/troubleshooting.md
+    about: Failure symptoms and their causes. Check here before opening an issue.
+  - name: Supported operating systems and test status
+    url: https://github.com/larskroghdk/windows-media-servicing/blob/main/docs/supported-operating-systems.md
+    about: Which releases are serviced, refused as unsupported or out of support, and what has been tested.

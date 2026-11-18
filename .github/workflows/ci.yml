@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  test:
+    name: Analyze and unit test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned modules
+        run: |
+          $modulePath = Join-Path $env:RUNNER_TEMP 'modules'
+          ./scripts/Install-BuildDependency.ps1 -Path $modulePath | Format-Table -AutoSize | Out-String | Write-Output
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "PSModulePath=$modulePath$([System.IO.Path]::PathSeparator)$env:PSModulePath"
+
+      - name: Lint
+        run: ./scripts/Invoke-QualityGate.ps1 -Task Lint
+
+      - name: Typecheck
+        run: ./scripts/Invoke-QualityGate.ps1 -Task Typecheck
+
+      - name: Unit tests
+        run: ./scripts/Invoke-QualityGate.ps1 -Task Test -TestResultPath TestResults.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-test-results
+          path: TestResults.xml
+          retention-days: 14

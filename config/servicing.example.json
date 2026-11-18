@@ -1,0 +1,25 @@
+{
+  "outputPath": "D:\\IsoServicing\\Output",
+  "workspacePath": "D:\\IsoServicing\\Workspace",
+  "cachePath": "D:\\IsoServicing\\Cache",
+  "storePath": "\\\\fs01.contoso.com\\iso",
+  "retainCount": 3,
+  "patchTuesdayDelayDays": 2,
+  "media": [
+    {
+      "name": "server-2025",
+      "sourceIso": "D:\\IsoServicing\\Source\\Windows_Server_2025.iso",
+      "bootTest": true
+    },
+    {
+      "name": "server-2022",
+      "sourceIso": "D:\\IsoServicing\\Source\\Windows_Server_2022.iso",
+      "indexes": [2, 4]
+    },
+    {
+      "name": "windows-11-24h2-enterprise",
+      "sourceIso": "D:\\IsoServicing\\Source\\Windows_11_24H2_Business.iso",
+      "bootTest": true
+    }
+  ]
+}

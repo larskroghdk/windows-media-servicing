@@ -1,0 +1,74 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Quality gate: All",
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "${workspaceFolder}/scripts/Invoke-QualityGate.ps1",
+        "-Task",
+        "All"
+      ],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality gate: Lint",
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "${workspaceFolder}/scripts/Invoke-QualityGate.ps1",
+        "-Task",
+        "Lint"
+      ],
+      "group": "build",
+      "problemMatcher": {
+        "owner": "quality-gate",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^([A-Za-z]:\\\\[^:]+):(\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      }
+    },
+    {
+      "label": "Quality gate: Typecheck",
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "${workspaceFolder}/scripts/Invoke-QualityGate.ps1",
+        "-Task",
+        "Typecheck"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality gate: Test",
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "${workspaceFolder}/scripts/Invoke-QualityGate.ps1",
+        "-Task",
+        "Test"
+      ],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    }
+  ]
+}

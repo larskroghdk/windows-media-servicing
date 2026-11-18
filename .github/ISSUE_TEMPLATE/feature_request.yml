@@ -1,0 +1,22 @@
+name: Feature request
+description: Support for another release or update type, or a change to servicing, validation or publishing.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you can't do today, and in which servicing scenario.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What the module should do. Link the Microsoft documentation the behavior is based on, if there is any.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
