@@ -83,7 +83,7 @@ Schema version 1, written next to the ISO as `<iso>.json`. Main sections:
 | `output` | File name, SHA-256, size, servicing month, image format (`wim`/`swm`), boot modes |
 | `updates` | KB, category, title, release month, OS build, update ID, package files with role and SHA-256 |
 | `images.install` | Per index: edition, serviced flag, lifecycle, version before/after, rollup package version before/after, WinRE result, applied packages, installed package list |
-| `images.boot` | Per boot.wim index: versions and applied packages |
+| `images.boot` | Per boot.wim index: versions, rollup package version before/after and applied packages |
 | `images.setupMedia` | Setup Dynamic Update and replaced setup/boot files |
 | `validation` | `passed`, structural checks, boot test result (`performed: false` when not run) |
 | `toolVersion`, `runId`, `createdAt`, `servicing` | Provenance and timestamps |

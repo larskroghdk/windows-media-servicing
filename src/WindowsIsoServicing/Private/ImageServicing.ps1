@@ -645,7 +645,8 @@ function Update-BootImage {
         Update-SetupMedia.
         On releases with a combined servicing stack, the cumulative update is added twice, as in Microsoft's sample
         (steps 17 and 23): the first add installs its servicing stack and may report the documented 0x8007007E issue,
-        the second installs the update itself and must succeed.
+        the second installs the update itself and must succeed. The Package_for_RollupFix version must then have increased,
+        as for install.wim (Assert-CumulativeUpdateResult), so a WinPE that DISM reported as updated but is not stops the run.
         Releases serviced with monthly rollups, and plans without a cumulative update, leave boot.wim unchanged. On a
         failure the mount is discarded and the error rethrown.
 
@@ -699,6 +700,7 @@ function Update-BootImage {
         $applied = [System.Collections.Generic.List[object]]::new()
         Mount-ServicingImage -ImagePath $BootImagePath -Index $index -MountPath $mountPath -Context $Context
         try {
+            $rollupBefore = Get-RollupVersion -MountPath $mountPath
             foreach ($stack in $Plan.Updates | Where-Object Category -EQ 'ServicingStack') {
                 $result = Add-ServicingPackage -MountPath $mountPath -PackagePath $stack.Files[0].Path -Component "WinPE$index" -Context $Context -AllowNotApplicable
                 $applied.Add((New-AppliedRecord -Update $stack -Result $result))
@@ -709,6 +711,8 @@ function Update-BootImage {
             }
             $result = Add-ServicingPackage -MountPath $mountPath -PackagePath $Context.CumulativeUpdatePath -Component "WinPE$index" -Context $Context
             $applied.Add((New-AppliedRecord -Update $cumulative -Result $result))
+            $rollupAfter = Get-RollupVersion -MountPath $mountPath
+            Assert-CumulativeUpdateResult -Before $rollupBefore -After $rollupAfter -Update $cumulative -Target "boot.wim#$index"
             if ($Context.ComponentCleanup) { Invoke-ComponentCleanup -MountPath $mountPath -Component "WinPE$index" -Context $Context }
             if (Test-Path -LiteralPath (Join-Path $mountPath 'sources\setup.exe') -PathType Leaf) {
                 $setupFiles = Save-SetupBinary -MountPath $mountPath -Destination $setupFilesPath -Build $detail.Build
@@ -724,6 +728,8 @@ function Update-BootImage {
                 name          = $image.ImageName
                 versionBefore = $versionBefore
                 versionAfter  = (Get-WindowsImage -ImagePath $exportPath -Index $index -ErrorAction Stop).Version
+                rollupBefore  = [string]$rollupBefore
+                rollupAfter   = [string]$rollupAfter
                 applied       = @($applied)
             })
     }

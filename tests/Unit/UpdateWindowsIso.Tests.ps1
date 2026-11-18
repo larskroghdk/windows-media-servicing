@@ -417,19 +417,45 @@ Describe 'Update-BootImage' {
             Mock Get-WindowsImage { if ($Index) { [pscustomobject]@{ ImageIndex = $Index; Version = '10.0.26100.1'; Build = 26100 } } else { [pscustomobject]@{ ImageIndex = 1; ImageName = 'Microsoft Windows PE' }, [pscustomobject]@{ ImageIndex = 2; ImageName = 'Microsoft Windows Setup' } } }
             Mock Mount-ServicingImage { }
             Mock Dismount-ServicingImage { }
-            Mock Add-ServicingPackage { 'Installed' }
+            Mock Add-ServicingPackage { $script:bootRollup = [version]'26100.7171.1.10'; 'Installed' }
+            Mock Get-RollupVersion { $script:bootRollup }
             Mock New-AppliedRecord { [pscustomobject]@{ result = $Result } }
             Mock Save-SetupBinary { [pscustomobject]@{ Build = $Build } }
             Mock Export-WindowsImage { }
             Mock Move-Item { }
-            $cumulative = [pscustomobject]@{ Category = 'CumulativeUpdate'; Kb = 'KB5070000'; Files = @() }
+            $script:bootRollup = [version]'26100.1742.1.10'
+            $cumulative = [pscustomobject]@{ Category = 'CumulativeUpdate'; Kb = 'KB5070000'; OsBuild = '26100.7171'; Files = @() }
             $plan = [pscustomobject]@{ OperatingSystem = [pscustomobject]@{ Servicing = [pscustomobject]@{ Model = 'Cumulative'; ServicingStackCombined = $true } }; Updates = @($cumulative) }
             $result = Update-BootImage -BootImagePath 'C:\media\sources\boot.wim' -Plan $plan -Context $Context
             $result.Serviced | Should -BeTrue
             $result.SetupFiles.Build | Should -Be 26100
             $result.Indexes.name | Should -Be @('Microsoft Windows PE', 'Microsoft Windows Setup')
+            $result.Indexes[0].rollupBefore | Should -Be '26100.1742.1.10'
+            $result.Indexes[0].rollupAfter | Should -Be '26100.7171.1.10'
             Should -Invoke Save-SetupBinary -Times 1 -ParameterFilter { $Build -eq 26100 -and $MountPath -like '*boot-2' }
             Should -Invoke Add-ServicingPackage -Times 4
+        }
+    }
+
+    It 'discards the mount and stops when the cumulative update did not change WinPE' {
+        $context = [pscustomobject]@{ WorkPath = (Join-Path $TestDrive 'work-unchanged'); MountRoot = (Join-Path $TestDrive 'mount-unchanged'); ScratchPath = $TestDrive; LogPath = $TestDrive; CumulativeUpdatePath = 'C:\lcu'; ComponentCleanup = $false }
+        InModuleScope WindowsIsoServicing -Parameters @{ Context = $context } {
+            Mock Get-WindowsImage { if ($Index) { [pscustomobject]@{ ImageIndex = $Index; Version = '10.0.26100.1742'; Build = 26100 } } else { [pscustomobject]@{ ImageIndex = 1; ImageName = 'Microsoft Windows PE' } } }
+            Mock Mount-ServicingImage { }
+            Mock Dismount-ServicingImage { }
+            Mock Undo-ServicingMount { throw $Failure }
+            Mock Add-ServicingPackage { 'Installed' }
+            Mock Get-RollupVersion { [version]'26100.1742.1.10' }
+            Mock New-AppliedRecord { [pscustomobject]@{ result = $Result } }
+            Mock Export-WindowsImage { }
+            Mock Move-Item { }
+            $cumulative = [pscustomobject]@{ Category = 'CumulativeUpdate'; Kb = 'KB5070000'; OsBuild = '26100.7171'; Files = @() }
+            $plan = [pscustomobject]@{ OperatingSystem = [pscustomobject]@{ Servicing = [pscustomobject]@{ Model = 'Cumulative'; ServicingStackCombined = $false } }; Updates = @($cumulative) }
+            { Update-BootImage -BootImagePath 'C:\media\sources\boot.wim' -Plan $plan -Context $Context } | Should -Throw '*boot.wim#1 cumulative update revision did not change*'
+            Should -Invoke Undo-ServicingMount -Times 1
+            Should -Invoke Dismount-ServicingImage -Times 0
+            Should -Invoke Export-WindowsImage -Times 0
+            Should -Invoke Move-Item -Times 0
         }
     }
 }

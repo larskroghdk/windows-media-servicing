@@ -66,7 +66,7 @@ needs, as Microsoft documents. The same folder is used for WinPE and for WinRE's
 
 ## ✅ Verification
 
-- After the cumulative update, the `Package_for_RollupFix` version must have increased. When the update title includes the OS build, the revision must be at least that build. A cumulative update that reports success without changing the image fails the run.
+- After the cumulative update, the `Package_for_RollupFix` version of every install.wim and boot.wim index must have increased. When the update title includes the OS build, the revision must be at least that build. A cumulative update that reports success without changing the image fails the run.
 - Installed packages are listed for every serviced index and recorded in the manifest.
 - Commits and exports use `-CheckIntegrity`.
 - Leftover mounts under the run workspace are discarded in `finally`. Validation checks that none remain.

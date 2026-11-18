@@ -39,7 +39,7 @@ Hard constraints. A change that breaks one of these is wrong, whatever else it a
     Enforced by: `Update-WinReImage`, `Update-InstallImage`, `Update-BootImage`; code review.
  2. **Only these DISM results are tolerated:** 0x8007007E when the combined cumulative update is added to WinPE/WinRE, 0x800F081E for standalone servicing stack and .NET packages, and 0x800F0806 during component cleanup. Everything else stops the run.
     Enforced by: the `Add-ServicingPackage` switches and the `Invoke-ComponentCleanup` success codes; `tests/Unit/UpdateWindowsIso.Tests.ps1` (`Test-ErrorHResult`); code review for new call sites.
- 3. **A cumulative update must change the image.** The `Package_for_RollupFix` version must increase, or already be at the title's OS build.
+ 3. **A cumulative update must change the image.** The `Package_for_RollupFix` version of every install.wim and boot.wim index must increase, or already be at the title's OS build.
     Enforced by: `Assert-CumulativeUpdateResult`; `tests/Unit/UpdateWindowsIso.Tests.ps1`.
  4. **No `/ResetBase`, and no removal of existing packages.**
     Enforced by: the forbidden-pattern lint in `scripts/Invoke-QualityGate.ps1` (`/ResetBase`); code review.
