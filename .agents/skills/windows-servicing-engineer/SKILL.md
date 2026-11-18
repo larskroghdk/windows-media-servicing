@@ -39,7 +39,7 @@ When Microsoft's page and the code disagree, the page wins; record the decision 
   nested exceptions (`Test-ErrorHResult`), never through message text, which is localized.
 - **WinRE gets the servicing stack and the Safe OS Dynamic Update only,** and stays untouched without a Safe OS Dynamic
   Update. Each unique `Winre.wim` (by SHA-256) is serviced once and reused.
-- **Prove the cumulative update.** `Assert-CumulativeUpdateResult` compares `Package_for_RollupFix` before and after.
+- **Prove the cumulative update.** `Assert-CumulativeUpdateResult` compares `Package_for_RollupFix` before and after, in install.wim and boot.wim.
   Never relax it because DISM returned success; DISM does that for packages it skipped.
 - **Checkpoints:** `Add-WindowsPackage -PackagePath` points at the target MSU in a folder created by
   `New-CumulativeUpdateFolder` that holds only the target and its checkpoint MSUs. Don't pass the folder, and don't
